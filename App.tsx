@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { GameScreen, Character, SeasonalEvent } from './types';
 import { GameProvider, useNavigation, useSession, useProfile, useSettings } from './src/context/GameContext';
-import { MusicType, SoundType, startMusic, stopMusic } from './src/utils/AudioEngine';
+import { MusicType, SoundType, startMusic, stopMusic, preloadMusic } from './src/utils/AudioEngine';
 
 import { GameWrapper } from './src/components/core/GameWrapper';
 import { HUD } from './src/components/core/HUD';
@@ -143,6 +143,9 @@ const App: React.FC = () => {
             setIsInitialLaunch(true);
             // Don't show immediately if we are on WARNING screen, handled in onContinue
         }
+        
+        // Start background music loading
+        preloadMusic();
     }, []);
 
     // Управление фоновой музыкой

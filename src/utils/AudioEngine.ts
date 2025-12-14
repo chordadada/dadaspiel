@@ -154,6 +154,22 @@ export const toggleMuteState = (): boolean => {
 
 export const getMuteState = (): boolean => isMutedGlobally;
 
+// --- Preload Function ---
+// Загружает файлы в кеш браузера, не декодируя их в память (чтобы не забить RAM).
+export const preloadMusic = async () => {
+    try {
+        console.log("AudioEngine: Starting background music preload...");
+        for (const track of CUSTOM_PLAYLIST) {
+            const url = `music/${track}`;
+            // fetch кладет файл в disk cache браузера
+            await fetch(url, { priority: 'low' }).catch(e => console.warn(`Failed to preload ${track}`, e));
+        }
+        console.log("AudioEngine: Music preload complete.");
+    } catch (e) {
+        console.warn("AudioEngine: Preload interrupted", e);
+    }
+};
+
 export const stopMusic = () => {
     musicNodes.forEach(node => {
         if (node.disconnect) node.disconnect();
@@ -223,6 +239,7 @@ export const startMusic = (type: MusicType) => {
             const audio = new Audio(audioPath);
             audio.loop = true;
             audio.volume = isMutedGlobally ? 0 : VOL_MP3;
+						// Промис может быть отклонен из-за политики автовоспроизведения, это нормально
             audio.play().catch(() => {});
             activeHtmlAudio = audio;
             musicNodes.push({ disconnect: () => { if (activeHtmlAudio === audio) { audio.pause(); activeHtmlAudio = null; } } });
