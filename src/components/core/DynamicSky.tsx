@@ -106,7 +106,7 @@ const CelestialBody: React.FC<{ type: 'sun' | 'moon', progress: number }> = ({ t
     );
 };
 
-export const DynamicSky: React.FC = () => {
+export const DynamicSky: React.FC<{ showHorizon?: boolean }> = ({ showHorizon = true }) => {
     const { character } = useSession();
     
     // Global Time State
@@ -225,7 +225,7 @@ export const DynamicSky: React.FC = () => {
 
         if (character === Character.SEXISM) {
             // Expressionism: High saturation, contrast, warm shift
-            filter = 'contrast(2.2) saturate(2.8) hue-rotate(100deg)';
+            filter = 'contrast(1.2) saturate(1.8) hue-rotate(-10deg)';
             // Add a subtle colored overlay to tints shadows
             overlay = 'rgba(255, 100, 0, 0.1)'; 
         } else if (character === Character.BLACK_PLAYER) {
@@ -258,6 +258,8 @@ export const DynamicSky: React.FC = () => {
             <div 
                 className="absolute inset-0 transition-all duration-1000"
                 style={{ 
+                    // Gradient uses calculated bottomColor. 
+                    // We don't flatten it for showHorizon=false, we just don't render the haze div.
                     background: `linear-gradient(to bottom, ${topColor}, ${bottomColor})`,
                     filter: themeFilter
                 }}
@@ -287,11 +289,13 @@ export const DynamicSky: React.FC = () => {
                     </div>
                 ))}
 
-                {/* Horizon Haze */}
-                <div 
-                    className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"
-                    style={{ opacity: 0.5 + weather * 0.5 }}
-                ></div>
+                {/* Horizon Haze - Only shown if requested */}
+                {showHorizon && (
+                    <div 
+                        className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"
+                        style={{ opacity: 0.5 + weather * 0.5 }}
+                    ></div>
+                )}
             </div>
 
             {/* Tint Overlay for Character Theme (sits on top of everything) */}

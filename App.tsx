@@ -73,9 +73,8 @@ const WelcomeInstructionContent: React.FC<{ character?: Character | null; isMini
                     <li><span className="text-2xl">🚪</span> - Выйти в меню выбора профиля.</li>
                 </ul>
             </li>
-            <li><strong>СНЫ:</strong> Внимательно читайте правила перед каждой игрой.</li>
         </ul>
-        <p className="mt-4">ДаДа, ДАДА!</p>
+        <p className="mt-4"><strong>СОВЕТ:</strong> Внимательно читайте правила перед каждой игрой.</p>
     </>
 );
 

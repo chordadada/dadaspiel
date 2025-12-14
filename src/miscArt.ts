@@ -1,4 +1,6 @@
 
+// ... existing imports and exports ...
+
 // Пиксель-арт для художника-дадаиста
 export const ARTIST_ART_DATA = [
 "      BBBB      ",
@@ -136,6 +138,125 @@ export const MINI_GUARD_ART = [ // 6x9
   " b bb ",
   " b  b ",
 ];
+
+// --- CHALK DRAWINGS (For ProhodKKino background) ---
+// Used as subtle background details on the "asphalt".
+// Palette: 'w' for white chalk (or light grey).
+export const CHALK_DRAWINGS = [
+    // 1. Sun
+    [
+        "  w   w  ",
+        "   w w   ",
+        "  wwwww  ",
+        " w w w w ",
+        " wwwwwww ",
+        " w w w w ",
+        "  wwwww  ",
+        "   w w   ",
+        "  w   w  ",
+    ],
+    // 2. House
+    [
+        "    w    ",
+        "   w w   ",
+        "  w   w  ",
+        " w     w ",
+        "wwwwwwwww",
+        "w       w",
+        "w  w w  w",
+        "w  w w  w",
+        "wwwwwwwww",
+    ],
+    // 3. Flower
+    [
+        "   w w   ",
+        "  wwwww  ",
+        " w w w w ",
+        "  wwwww  ",
+        "   w w   ",
+        "    w    ",
+        "   w w   ",
+        "    w    ",
+        "    w    ",
+    ],
+    // 4. Smiley
+    [
+        "  wwwww  ",
+        " w     w ",
+        "w w   w w",
+        "w       w",
+        "w w   w w",
+        " w www w ",
+        "  wwwww  ",
+    ],
+    // 5. Cat Face
+    [
+        "w       w",
+        "ww     ww",
+        "wwwwwwwww",
+        "w w   w w",
+        "w   w   w",
+        " w     w ",
+        "  wwwww  ",
+    ],
+    // 6. Car
+    [
+        "   wwww  ",
+        "  w    w ",
+        " wwwwwwww",
+        "w  w  w  w",
+        "wwwwwwwwww",
+        " w      w ",
+        "  wwwwww  ",
+    ],
+    // 7. Hopscotch (Grid)
+    [
+        " www ",
+        " w w ",
+        " www ",
+        "wwwww",
+        "w w w",
+        "wwwww",
+        " www ",
+        " w w ",
+        " www ",
+    ],
+    // 8. Heart
+    [
+        " ww   ww ",
+        "w  w w  w",
+        "w   w   w",
+        " w     w ",
+        "  w   w  ",
+        "   w w   ",
+        "    w    ",
+    ],
+    // 9. Stickman
+    [
+        "  www  ",
+        "  w w  ",
+        "  www  ",
+        "   w   ",
+        " wwww  ",
+        " w w w ",
+        " w w w ",
+        "   w   ",
+        "  w w  ",
+        " w   w ",
+    ],
+    // 10. Star
+    [
+        "    w    ",
+        "   www   ",
+        "  wwwww  ",
+        "wwwwwwwww",
+        " wwwwwww ",
+        "  wwwww  ",
+        " w w w w ",
+        "w       w",
+    ],
+];
+
 
 // --- 8-BIT BELARUSIAN DADA SILHOUETTES ---
 

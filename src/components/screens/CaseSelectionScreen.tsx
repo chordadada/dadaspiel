@@ -112,7 +112,7 @@ export const CaseSelectionScreen: React.FC = () => {
   useEffect(() => { playerRef.current = player; }, [player]);
 
   // --- World Generation ---
-  const { allDoors, platforms, decorations } = useMemo(() => {
+  const { allDoors, platforms, decorations, stopSignX } = useMemo(() => {
       // 1. Setup PRNG based on Profile ID
       const seedStr = activeProfile ? activeProfile.id : 'default';
       const seed = cyrb128(seedStr);
@@ -142,7 +142,9 @@ export const CaseSelectionScreen: React.FC = () => {
 
       // 3. Generate Level Structure
       let currentX = 300;
-      
+      let calculatedStopSignX = WORLD_WIDTH - 200; // Default at end
+      let foundStop = false;
+
       dynamicCases.forEach((c) => {
           c.minigames.forEach((mg, index) => {
               // Особая логика для 3 сентября (3-2)
@@ -197,15 +199,70 @@ export const CaseSelectionScreen: React.FC = () => {
 
               currentX += 300; 
           });
-          currentX += 150;
+          
+          // Stop Sign Logic:
+          // Check if this case is NOT completed. If so, place stop sign after this case.
+          if (activeProfile && !foundStop) {
+              const progress = activeProfile.progress[c.id] || 0;
+              // If not fully completed, this is the current active case.
+              // Stop sign prevents moving past it to the NEXT case.
+              if (progress < c.minigames.length) {
+                  calculatedStopSignX = currentX - 50; // Place shortly after the last door of this case
+                  foundStop = true;
+              }
+          }
+
+          currentX += 150; // Gap between cases
       });
 
       // Parkour platforms for Wormhole (Standard style to look sturdy)
       plats.push({ x: 1900, y: 250, w: 100, h: 20, type: 'standard' });
       plats.push({ x: 2400, y: 300, w: 100, h: 20, type: 'standard' });
       
-      return { allDoors: doors, platforms: plats, decorations: decos };
+      return { allDoors: doors, platforms: plats, decorations: decos, stopSignX: calculatedStopSignX };
   }, [dynamicCases, activeProfile]);
+
+  // --- Initial Player Position ---
+  useEffect(() => {
+      // Find the first door that corresponds to the current progression and set player near it.
+      // This happens only once on mount.
+      if (allDoors.length > 0 && activeProfile) {
+          // Find the first door that is "current" (unlocked but maybe not completed, or just completed)
+          // We can iterate through doors.
+          let targetDoorX = 100;
+          let foundTarget = false;
+
+          for (const door of allDoors) {
+              if (door.id === '3-2') continue; // Skip wormhole for spawn logic
+              
+              // Get completion status of this specific minigame
+              const parentCase = dynamicCases.find(c => c.minigames.some(m => m.id === door.id));
+              if (parentCase) {
+                  const idx = parentCase.minigames.findIndex(m => m.id === door.id);
+                  const progress = activeProfile.progress[parentCase.id] || 0;
+                  
+                  // If this is the first uncompleted game, spawn here
+                  if (progress === idx) {
+                      targetDoorX = door.x;
+                      foundTarget = true;
+                      break;
+                  }
+                  // If we are at the end of a case (progress == length) and this is the last game,
+                  // we might want to spawn near the next case, but the loop will handle the next case's first game.
+              }
+          }
+          
+          // If all games in a case are done, spawn at the *next* available game (handled by loop above)
+          // If ALL games in ALL cases are done, spawn near the end or last door.
+          if (!foundTarget) {
+              // Find last non-wormhole door
+              const lastDoor = [...allDoors].reverse().find(d => d.id !== '3-2');
+              if (lastDoor) targetDoorX = lastDoor.x;
+          }
+
+          setPlayer(p => ({ ...p, x: Math.max(100, targetDoorX - 100) }));
+      }
+  }, []); // Run ONCE on mount
 
   // --- Helpers ---
   const isMinigameUnlocked = (targetId: string) => {
@@ -291,7 +348,9 @@ export const CaseSelectionScreen: React.FC = () => {
           let newY = p.y + newVy * deltaTime;
           let newGrounded = false;
 
-          newX = Math.max(50, Math.min(newX, WORLD_WIDTH - 50)); 
+          // World Boundaries (Left wall and Stop Sign)
+          // Stop sign blocks rightward movement
+          newX = Math.max(50, Math.min(newX, stopSignX - 30)); 
 
           if (newY <= GROUND_LEVEL) {
               newY = GROUND_LEVEL;
@@ -349,7 +408,7 @@ export const CaseSelectionScreen: React.FC = () => {
       }
       setActiveDoorId(foundDoor);
 
-  }, [platforms, allDoors, seasonalEvent]), true);
+  }, [platforms, allDoors, seasonalEvent, stopSignX]), true);
 
   // --- Rendering ---
   const charArt = CHARACTER_ART_MAP[character || Character.KANILA];
@@ -507,8 +566,8 @@ export const CaseSelectionScreen: React.FC = () => {
                 );
             })}
 
-            {/* Locked sign at the end */}
-            <div className="absolute z-10" style={{ left: WORLD_WIDTH - 200, bottom: GROUND_LEVEL }}>
+            {/* Dynamic Stop Sign at current limit */}
+            <div className="absolute z-10" style={{ left: stopSignX, bottom: GROUND_LEVEL }}>
                 <PixelArt artData={STOP_SIGN_ART} palette={EXTENDED_PALETTE} pixelSize={6} />
             </div>
 

@@ -349,7 +349,76 @@ export const startMusic = (type: MusicType) => {
             break;
         }
         case MusicType.AMBIENT_GALLERY: { const scheduler = setInterval(() => { if (Math.random() < 0.2) { playSimpleSound(220 + Math.random() * 220, 3, 0.4, 'sine'); } }, 5000); musicNodes.push({ disconnect: () => clearInterval(scheduler) }); break; }
-        case MusicType.AMBIENT_DANCE: { const scheduler = setInterval(() => { if (!musicGain) { clearInterval(scheduler); return; } playSimpleSound(80, 0.1, 1, 'sine'); setTimeout(() => playSimpleSound(4000, 0.05, 0.5, 'triangle'), 250); }, 500); musicNodes.push({ disconnect: () => clearInterval(scheduler) }); break; }
+        case MusicType.AMBIENT_DANCE: { 
+            // House/Lounge style. Less annoying, more groovy.
+            let beat = 0;
+            const scheduler = setInterval(() => { 
+                if (!musicGain) { clearInterval(scheduler); return; } 
+                const t = ctx.currentTime;
+                
+                // Deep Kick (4/4)
+                if (beat % 4 === 0) {
+                    const osc = ctx.createOscillator(); const g = ctx.createGain();
+                    osc.connect(g).connect(musicGain!);
+                    osc.frequency.setValueAtTime(100, t);
+                    osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.3);
+                    g.gain.setValueAtTime(0.8, t);
+                    g.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                    osc.start(t); osc.stop(t + 0.3);
+                }
+                
+                // Closed Hat (every beat)
+                const bufferSize = ctx.sampleRate * 0.05;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1);
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                const noiseFilter = ctx.createBiquadFilter();
+                noiseFilter.type = 'highpass';
+                noiseFilter.frequency.value = 6000;
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.1, t);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                noise.connect(noiseFilter).connect(noiseGain).connect(musicGain!);
+                noise.start(t);
+
+                // Smooth Bass (Walking)
+                if (beat % 4 === 0 || beat % 4 === 2) {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sine';
+                    // C2 - G2 - A2 - F2 pattern (roughly 65, 98, 110, 87 Hz)
+                    const notes = [65.41, 98.00, 110.00, 87.31];
+                    const note = notes[Math.floor(beat / 8) % 4];
+                    osc.frequency.setValueAtTime(note, t);
+                    const g = ctx.createGain();
+                    g.gain.setValueAtTime(0.4, t);
+                    g.gain.linearRampToValueAtTime(0, t + 0.3);
+                    osc.connect(g).connect(musicGain!);
+                    osc.start(t); osc.stop(t + 0.3);
+                }
+                
+                // Soft Chord Pad (every 16 beats)
+                if (beat % 32 === 0) {
+                    const chord = [261.63, 311.13, 392.00, 466.16]; // Cm7
+                    chord.forEach(freq => {
+                        const osc = ctx.createOscillator(); osc.type = 'triangle';
+                        const g = ctx.createGain();
+                        osc.connect(g).connect(musicGain!);
+                        osc.frequency.value = freq;
+                        g.gain.setValueAtTime(0, t);
+                        g.gain.linearRampToValueAtTime(0.1, t + 1);
+                        g.gain.linearRampToValueAtTime(0, t + 4);
+                        osc.start(t); osc.stop(t + 4);
+                    });
+                }
+
+                beat++; 
+            }, 125); // 120 BPM (125ms per 16th note? No, 500ms per beat = 120bpm. This is 8th notes at 240 or 16th at 120)
+            // Let's assume tick is 1/4 beat. 120 BPM = 2bps. 1 beat = 500ms. 1/4 beat = 125ms.
+            musicNodes.push({ disconnect: () => clearInterval(scheduler) }); 
+            break; 
+        }
         case MusicType.AMBIENT_ZEN: { const playPad = () => playSimpleSound(110 + Math.random() * 50, 8, 0.3, 'triangle'); playPad(); const scheduler = setInterval(playPad, 7000); musicNodes.push({ disconnect: () => clearInterval(scheduler) }); break; }
         case MusicType.AMBIENT_TENSION: { const drone = ctx.createOscillator(); const drone2 = ctx.createOscillator(); drone.type = 'sawtooth'; drone2.type = 'sawtooth'; drone.frequency.value = 82; drone2.frequency.value = 82.5; drone.connect(musicGain); drone2.connect(musicGain); drone.start(); drone2.start(); musicNodes.push({ disconnect: () => { drone.stop(); drone2.stop(); } }); break; }
         // Seasonal Logic
@@ -369,7 +438,6 @@ export const startMusic = (type: MusicType) => {
 };
 
 export const playSound = (type: SoundType) => {
-    // ... (rest of playSound logic unchanged)
     if (isMutedGlobally) return;
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -440,7 +508,71 @@ export const playSound = (type: SoundType) => {
         case SoundType.POWERUP: play(440, 0.1, 0.1, 'square'); setTimeout(() => play(880, 0.2, 0.1, 'square'), 100); break;
         case SoundType.BOSS_ROAR: playNoise(1.5, 0.5, 'lowpass', 200); play(50, 1.5, 0.5, 'sawtooth'); break;
         case SoundType.SPLAT: playNoise(0.1, 0.2, 'lowpass', 600); break;
-        case SoundType.DADA_ECSTASY: /* ... (keep complex logic if needed or simplify) ... */ break; 
+        
+        // DADA ECSTASY: Updated Logic (Ticking -> Swell -> Pop)
+        case SoundType.DADA_ECSTASY: {
+            // 1. Ticking / Clicking (starts slow, speeds up)
+            // Simulating a geiger counter or timer ticking
+            const clickOsc = ctx.createOscillator();
+            const clickGain = ctx.createGain();
+            clickOsc.type = 'square';
+            clickOsc.frequency.value = 800; // High pitch click
+            clickOsc.connect(clickGain).connect(ctx.destination);
+            
+            // Create a custom pulsing gain curve for clicking effect
+            clickGain.gain.setValueAtTime(0, t);
+            
+            // Schedule clicks up to 11s (match visual explosion)
+            let time = t;
+            let interval = 0.5; // Start interval (500ms)
+            while (time < t + 11) {
+                clickGain.gain.setValueAtTime(0, time);
+                clickGain.gain.linearRampToValueAtTime(0.05, time + 0.01);
+                clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+                time += interval;
+                interval *= 0.9; // Speed up
+                if (interval < 0.05) interval = 0.05; // Cap speed
+            }
+            clickOsc.start(t);
+            clickOsc.stop(t + 11);
+
+            // 2. Swelling Pad (Starts at 3s, grows until 11s)
+            const swellOsc = ctx.createOscillator();
+            const swellGain = ctx.createGain();
+            swellOsc.type = 'sawtooth';
+            swellOsc.frequency.setValueAtTime(55, t + 3); // Low bass
+            swellOsc.frequency.linearRampToValueAtTime(220, t + 11); // Rise pitch
+            
+            // Lowpass filter to open up the sound
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(100, t + 3);
+            filter.frequency.exponentialRampToValueAtTime(2000, t + 11);
+
+            swellOsc.connect(filter).connect(swellGain).connect(ctx.destination);
+            swellGain.gain.setValueAtTime(0, t + 3);
+            swellGain.gain.linearRampToValueAtTime(0.2, t + 11); // Ear-safe volume cap
+            swellOsc.start(t + 3);
+            swellOsc.stop(t + 11);
+
+            // 3. The Pop (at 11s, synced with visual explosion)
+            const popNoise = ctx.createBufferSource();
+            const bufferSize = ctx.sampleRate * 0.5; // 0.5 sec burst
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            popNoise.buffer = buffer;
+            const popGain = ctx.createGain();
+            popGain.gain.setValueAtTime(0.4, t + 11);
+            popGain.gain.exponentialRampToValueAtTime(0.001, t + 11.5);
+            popNoise.connect(popGain).connect(ctx.destination);
+            popNoise.start(t + 11);
+
+            break; 
+        }
+            
         case SoundType.BUTTON_CLICK: play(440, 0.1, 0.1, 'triangle'); osc!.frequency.exponentialRampToValueAtTime(880, t + 0.1); break;
         case SoundType.GENERIC_CLICK: play(200, 0.05, 0.1, 'square'); break;
         case SoundType.ITEM_CATCH_GOOD: play(880, 0.1, 0.1, 'sine'); break;

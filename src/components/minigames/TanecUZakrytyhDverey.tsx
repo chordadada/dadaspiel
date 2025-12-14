@@ -198,7 +198,9 @@ export const TanecUZakrytyhDvereyWinScreen: React.FC<{ onContinue: () => void; o
 
 // Sub-components
 const MuseumBackground = () => (
-    <div className="absolute inset-0 bg-gradient-to-t from-[#2c222e] to-[#4a3a54] overflow-hidden">
+    <div className="absolute inset-0 bg-[#7c6f8b] overflow-hidden" style={{
+        backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0,0,0,0.1) 20px)'
+    }}>
         {/* Floor */}
         <div className="absolute bottom-0 left-0 right-0 h-[15%] bg-[#3d3342]"></div>
         {/* Door */}
@@ -210,21 +212,16 @@ const MuseumBackground = () => (
                  <div className="w-8 h-8 rounded-full bg-yellow-600"></div>
              </div>
         </div>
-        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 text-2xl text-yellow-300">МУЗЕЙ</div>
     </div>
 );
 
-const ScoreBar = ({ name, score, maxScore, isPlayer }: { name: string, score: number, maxScore: number, isPlayer: boolean }) => {
+const ScoreBar = ({ score, maxScore, isPlayer }: { score: number, maxScore: number, isPlayer: boolean }) => {
   const percentage = Math.max(0, Math.min(100, (Math.abs(score) / maxScore) * 100));
   const barClass = isPlayer ? 'bg-blue-500' : 'bg-red-500';
-  const textClass = isPlayer ? 'text-left' : 'text-right';
-  const nameClass = `absolute top-0 px-2 text-white text-lg ${isPlayer ? 'left-0' : 'right-0'}`;
 
   return (
-    <div className={`w-[45%] h-8 bg-black/50 pixel-border relative ${textClass}`}>
-      <div className={nameClass}>{name}</div>
+    <div className={`w-[45%] h-8 bg-black/50 pixel-border relative`}>
       <div className={`h-full ${barClass} transition-all duration-300`} style={{ width: `${percentage}%` }}></div>
-      <div className="absolute inset-0 text-center font-bold text-white text-xl">{score}</div>
     </div>
   );
 };
@@ -236,6 +233,12 @@ const CharacterDisplay = ({ artData, pose, isHit, isDancing, isPlayer }: { artDa
 
     return (
         <div className={`absolute bottom-8 ${sideClass} ${animationClass}`} style={{ transform }}>
+             {/* Turn Indicator */}
+             {isDancing && (
+                <div className="absolute -top-16 left-1/2 -translate-x-1/2 text-4xl animate-bounce text-yellow-400 drop-shadow-md z-10" style={{ animationDuration: '0.5s' }}>
+                    🎵
+                </div>
+             )}
              <PixelArt artData={artData} palette={PIXEL_ART_PALETTE} pixelSize={6} />
         </div>
     );
@@ -442,16 +445,22 @@ export const TanecUZakrytyhDverey: React.FC<{ onWin: () => void; onLose: () => v
 
     const isPlayerTurn = phase === 'player';
     const isGuardTurn = phase === 'guard';
+    
+    // Calculate total remaining time based on current round and phaseTimeLeft
+    const remainingRounds = Math.max(0, 4 - round);
+    // Rough estimate: current phase remaining + duration of future rounds
+    const totalTimeRemaining = phaseTimeLeft + (remainingRounds * settings.phaseDuration);
+    
+    const isUrgent = totalTimeRemaining <= 5;
 
     const renderGame = () => (
         <>
             <div className="absolute top-20 w-full flex justify-between px-4 z-20">
-                <ScoreBar name={character || "Игрок"} score={playerScore} maxScore={settings.maxScore} isPlayer={true} />
+                <ScoreBar score={playerScore} maxScore={settings.maxScore} isPlayer={true} />
                 <div className="text-center text-white">
-                    <div className="text-xl">{isPlayerTurn ? "ВАШ ХОД" : isGuardTurn ? "ХОД ВАХТЁРШИ" : "ПРИГОТОВЬТЕСЬ"}</div>
-                    <div className="text-4xl font-bold">{Math.ceil(phaseTimeLeft)}</div>
+                    <div className={`text-4xl font-bold ${isUrgent ? 'text-red-500 animate-pulse' : ''}`}>{Math.ceil(totalTimeRemaining)}</div>
                 </div>
-                <ScoreBar name="Вахтёрша" score={guardScore} maxScore={settings.maxScore} isPlayer={false} />
+                <ScoreBar score={guardScore} maxScore={settings.maxScore} isPlayer={false} />
             </div>
 
             <CharacterDisplay artData={charArt} pose={playerPose} isHit={playerIsHit} isDancing={isPlayerTurn} isPlayer={true} />

@@ -149,9 +149,9 @@ export const FinalEnding: React.FC = () => {
             duration: 99999,
             component: () => (
                  <div className="w-full h-full flex flex-col items-center justify-center text-center animate-[fadeIn_3s_ease-in-out]">
-                    <div className="my-16 text-6xl">ВСЁ. ИДИТЕ ВОН.</div>
+                    <div className="my-16 text-6xl">ДАДА КОНЧИЛАСЬ</div>
                     <button onClick={handleReset} className="pixel-button p-4 text-2xl">
-                        ИСПЫТАТЬ ДРУГОЕ БИОСУЩЕСТВО
+                        ВЕРНУТЬСЯ К БИОСУЩЕСТВОВАНИЮ
                     </button>
                 </div>
             )

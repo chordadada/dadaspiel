@@ -6,6 +6,9 @@ import { useSession, useSettings, useNavigation } from '../../context/GameContex
 import { SoundType } from '../../utils/AudioEngine';
 import { Character } from '../../../types';
 import { MinigameHUD } from '../core/MinigameHUD';
+import { CHARACTER_ART_MAP, PIXEL_ART_PALETTE } from '../../../characterArt';
+import { PixelArt } from '../core/PixelArt';
+import { CHALK_DRAWINGS } from '../../miscArt';
 
 const VideoModal: React.FC<{ url: string; onClose: () => void }> = ({ url, onClose }) => {
     const getEmbedUrl = (videoUrl: string): string => {
@@ -207,11 +210,33 @@ export const ProhodKKino: React.FC<{ onWin: () => void; onLose: () => void; isMi
     const [player, setPlayer] = useState({ x: 5, y: 50 }); // Позиция игрока в %.
     const [obstacles, setObstacles] = useState<Obstacle[]>([]);
     const [gameStatus, setGameStatus] = useState<'playing' | 'won' | 'lost'>('playing');
+    const [wobble, setWobble] = useState(0); // State for player walking animation
     
+    // Chalk drawings logic
+    const [chalkDecorations, setChalkDecorations] = useState<{id: number, x: number, y: number, art: string[]}[]>([]);
+
+    useEffect(() => {
+        // Generate random chalk drawings once on mount/round 1
+        const decos = [];
+        for(let i=0; i<3; i++) {
+            const artIndex = Math.floor(Math.random() * CHALK_DRAWINGS.length);
+            decos.push({
+                id: i,
+                x: 10 + Math.random() * 80,
+                y: 10 + Math.random() * 80,
+                art: CHALK_DRAWINGS[artIndex]
+            });
+        }
+        setChalkDecorations(decos);
+    }, []);
+
+    // Art assets
+    const charArt = useMemo(() => CHARACTER_ART_MAP[character || Character.KANILA], [character]);
+
     // Генерация препятствий для каждого раунда.
     useEffect(() => {
         const newObstacles: Obstacle[] = []; const numObstacles = 10 + round * 4;
-        const obstaclePools = { person: ['🚶', '🏃', '🧍', '🧑‍🤝‍🧑', '🧎', '💃', '🕺', '🤸', '🧗', '🧘', '👨‍👩‍👧‍👦', '🤾', '👩‍🦽', '👨‍🦯'], animal: ['🦇', '🐈', '🐀', '🐍', '🕷️', '🦂', '🐕', '🐩', '🐅', '🐊', '🦥', '🐌', '🦀', '🦑', '🐘'], concept: STROITELNIE_TERMINY };
+        const obstaclePools = { person: ['🚶', '🏃', '🧍', '🧑‍🤝‍🧑', '🧎', '💃', '🕺', '🤸', '🧗', '🧘', '👨‍👩‍👧‍👦', '🤾', '👩‍🦽', '👨‍🦯'], animal: ['🦇', '🐈', '🐀', '🐍', '������️', '🦂', '🐕', '🐩', '🐅', '🐊', '🦥', '🐌', '🦀', '🦑', '🐘'], concept: STROITELNIE_TERMINY };
         const types: ('person' | 'animal' | 'concept')[] = ['person', 'animal', 'concept']; const typeForRound = types[round - 1]; const size = typeForRound === 'concept' ? 20 : (round < 3 ? 45 : 30);
         for (let i = 0; i < numObstacles; i++) {
             const pool = obstaclePools[typeForRound];
@@ -252,6 +277,10 @@ export const ProhodKKino: React.FC<{ onWin: () => void; onLose: () => void; isMi
             }
             return { ...p, x: newX };
         });
+        
+        // Wobble Animation for walking effect
+        setWobble(w => (w + deltaTime * 0.01) % (Math.PI * 2));
+
         // Движение препятствий.
         setObstacles(obs => obs.map(o => {
             if (o.isHit) return o; // Не двигаем "сбитые" препятствия в инвертированном режиме
@@ -329,7 +358,7 @@ export const ProhodKKino: React.FC<{ onWin: () => void; onLose: () => void; isMi
             className="w-full h-full bg-gradient-to-b from-[#333] to-[#111] flex flex-col items-center relative overflow-hidden cursor-none"
         >
             {gameStatus === 'won' && <ProhodKKinoWinScreen onContinue={onWin} isMuted={isMuted} />}
-            {gameStatus === 'lost' && <div className="absolute inset-0 bg-red-900 bg-opacity-70 z-30 flex items-center justify-center text-8xl text-white animate-[fadeIn_0.5s]">СТОЛКНОВЕНИЕ!</div>}
+            {gameStatus === 'lost' && <div className="absolute inset-0 bg-red-900 bg-opacity-70 z-30 flex items-center justify-center text-4xl md:text-6xl text-white animate-[fadeIn_0.5s]">СТОЛКНОВЕНИЕ!</div>}
             
             {gameStatus === 'playing' && (
             <>
@@ -339,7 +368,31 @@ export const ProhodKKino: React.FC<{ onWin: () => void; onLose: () => void; isMi
                 </MinigameHUD>
 
                 <div className="absolute top-0 bottom-0 right-0 w-8 bg-[repeating-linear-gradient(45deg,#fff,#fff_10px,#000_10px,#000_20px)] z-10"></div>
-                <div className="absolute w-5 h-5 bg-yellow-400 z-20" style={{ left: `${player.x}%`, top: `${player.y}%`, transform: `translate(-50%, -50%)`, boxShadow: '0 0 10px yellow', borderRadius: '50%' }}></div>
+                
+                {/* Chalk Drawings on Asphalt */}
+                <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+                    {chalkDecorations.map(deco => (
+                        <div key={deco.id} className="absolute transform -rotate-12" style={{left: `${deco.x}%`, top: `${deco.y}%`}}>
+                            {/* Increased pixelSize for larger drawings */}
+                            <PixelArt artData={deco.art} palette={{'w': '#cccccc'}} pixelSize={8} />
+                        </div>
+                    ))}
+                </div>
+
+                {/* Character Player */}
+                <div 
+                    className="absolute z-20 pointer-events-none" 
+                    style={{ 
+                        left: `${player.x}%`, 
+                        top: `${player.y}%`, 
+                        transform: `translate(-50%, -50%) rotate(${Math.sin(wobble * 10) * 10}deg)`,
+                        width: '32px',
+                        height: '32px'
+                    }}
+                >
+                    <PixelArt artData={charArt} palette={PIXEL_ART_PALETTE} pixelSize={2} />
+                </div>
+
                 {obstacles.map(o => <div key={o.id} className={`absolute z-10 ${o.isHit ? 'opacity-30' : ''}`} style={{ left: `${o.x}%`, top: `${o.y}%`, transform: 'translate(-50%, -50%)', fontSize: `${o.size}px`, color: o.color || '#fff', textShadow: '2px 2px 2px #000', transition: 'color 0.5s, opacity 0.5s' }}>{o.content}</div>)}
             </>
             )}
