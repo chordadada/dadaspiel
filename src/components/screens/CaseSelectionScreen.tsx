@@ -58,6 +58,24 @@ const EXTENDED_PALETTE = {
     S: '#777777', // Silver/Pole
 };
 
+// --- Unique Badges for Minigames ---
+const MINIGAME_BADGES: Record<string, string> = {
+    "1-1": "🥂", // Налей Шампанского
+    "1-2": "🌈", // Квир-Контроль (Единорог/Радуга)
+    "1-3": "🖼️", // Картина 317
+    "2-1": "🩰", // Танец (Пуанты)
+    "2-3": "🍬", // Дада-комплимент (Конфета)
+    "3-1": "📽️", // Проход к кино
+    "3-2": "🍂", // 3 Сентября (Лист)
+    "4-1": "🅰️", // Феминитив (Буква)
+    "4-2": "🦷", // Бойцовский клуб (Зуб)
+    "5-1": "🚑", // Не подавись (Скорая)
+    "5-2": "💋", // Поцелуй Добра
+    "6-1": "🍏", // Фруктовый спор
+    "6-2": "🌀", // Засос пылесоса
+    "6-3": "🥔", // Шутер (Драник/Картошка)
+};
+
 // --- Random Number Generator ---
 // A simple seeded random function to ensure the world looks the same for the same Profile ID
 const cyrb128 = (str: string) => {
@@ -516,6 +534,7 @@ export const CaseSelectionScreen: React.FC = () => {
                 const unlocked = isMinigameUnlocked(door.id);
                 const completed = isMinigameCompleted(door.id);
                 const isActive = activeDoorId === door.id;
+                const badge = MINIGAME_BADGES[door.id] || "✅";
                 
                 // --- 3RD SEPTEMBER WORMHOLE LOGIC ---
                 if (door.id === '3-2') {
@@ -539,7 +558,7 @@ export const CaseSelectionScreen: React.FC = () => {
                             <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 ${isActive ? 'scale-125' : 'scale-100'}`} style={{ background: 'radial-gradient(circle, #000 20%, #ff4500 60%, #ff8c00 100%)', animation: 'wormhole-spin 3s linear infinite, wormhole-pulse 1s ease-in-out infinite', boxShadow: isActive ? '0 0 20px #ff4500' : '0 0 10px #ff8c00' }}>
                                 <div className="text-2xl animate-pulse">🔥</div>
                             </div>
-                            {completed && <div className="absolute text-green-400 text-xl font-bold -bottom-4">✅</div>}
+                            {completed && <div className="absolute text-orange-400 text-2xl font-bold -bottom-6 animate-bounce drop-shadow-md">{badge}</div>}
                         </div>
                     )
                 }
@@ -559,7 +578,11 @@ export const CaseSelectionScreen: React.FC = () => {
                         </div>
                         <div className={`relative transition-all duration-300 ${isActive ? 'scale-105' : 'scale-100'} ${!unlocked ? 'opacity-50 grayscale' : ''}`} style={{ filter: unlocked ? `hue-rotate(${door.hueRotate}deg)` : 'none' }}>
                             <PixelArt artData={artData} palette={EXTENDED_PALETTE} pixelSize={6} />
-                            {completed && <div className="absolute inset-0 flex items-center justify-center bg-black/30"><span className="text-4xl filter drop-shadow-md">✅</span></div>}
+                            {completed && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                    <span className="text-4xl filter drop-shadow-md animate-pulse">{badge}</span>
+                                </div>
+                            )}
                             {!unlocked && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl">🔒</div>}
                         </div>
                     </div>
