@@ -151,7 +151,7 @@ export const StartScreen: React.FC = () => {
 
                 {/* RIGHT PANEL: Info (Description) */}
                 <div className="flex flex-col flex-1 bg-black/60 pixel-border backdrop-blur-md overflow-hidden relative min-w-0">
-                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-2 md:p-6 space-y-3 md:space-y-4">
+                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-2 md:p-6 space-y-2 md:space-y-4">
                         {isLocked ? (
                             <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-4">
                                 <span className="text-5xl">🚫</span>
@@ -162,13 +162,12 @@ export const StartScreen: React.FC = () => {
                             <>
                                 <div className="border-b border-gray-600 pb-2">
                                     <span className="text-s md:text-s text-yellow-500 font-bold uppercase tracking-widest text-shadow-sm">БИОСУЩЕСТВО</span>
-                                    <p className="text-m md:text-lg text-white font-bold leading-tight shadow-black drop-shadow-md">
+                                    <p className="text-s md:text-lg text-white font-bold leading-tight shadow-black drop-shadow-md">
                                         {currentCharData.description}
                                     </p>
                                 </div>
                                 
                                 <div>
-                                    <span className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wider block mb-1">ОСОБЕННОСТИ</span>
                                     <ul className="space-y-2">
                                         {currentCharData.abilities.map((ability, i) => (
                                             <li key={i} className="text-[11px] md:text-sm text-gray-300 flex items-start gap-3 bg-white/5 p-1.5 rounded border border-white/10">
