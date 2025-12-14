@@ -57,6 +57,46 @@ const getSeasonalMusic = (event: SeasonalEvent): MusicType | null => {
     }
 }
 
+// Component for the initial warning screen
+const WarningScreen: React.FC<{ onContinue: () => void }> = ({ onContinue }) => {
+    const [canContinue, setCanContinue] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setCanContinue(true), 3000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <div className="absolute inset-0 bg-black z-[100] flex flex-col items-center justify-center p-8 text-center border-4 border-white">
+            <h1 className="text-4xl md:text-6xl text-red-600 font-bold mb-8 animate-pulse">ВНИМАНИЕ!</h1>
+            <p className="text-xl md:text-2xl text-white mb-4">
+                Эта игра содержит быстро меняющиеся изображения, вспышки света и абсурдные смыслы.
+            </p>
+            <p className="text-lg text-gray-400 mb-8">
+                Если вы страдаете эпилепсией или отсутствием чувства юмора — проконсультируйтесь с врачом.
+            </p>
+            {canContinue ? (
+                <button onClick={onContinue} className="pixel-button p-4 text-2xl animate-[fadeIn_0.5s]">
+                    ПОНЯТНО
+                </button>
+            ) : (
+                <p className="text-sm text-gray-600 animate-pulse">Загрузка реальности...</p>
+            )}
+        </div>
+    );
+};
+
+// Simple Pause Overlay
+const PauseOverlay: React.FC<{ onResume: () => void }> = ({ onResume }) => (
+    <div className="absolute inset-0 bg-black/80 z-[80] flex flex-col items-center justify-center backdrop-blur-sm">
+        <h2 className="text-4xl text-yellow-300 mb-4 animate-pulse">ОСМЫСЛЕНИЕ</h2>
+        <p className="text-xl text-gray-300 mb-8">(сон на паузе)</p>
+        <button onClick={onResume} className="pixel-button p-4 text-2xl">
+            ПОНЯТНО
+        </button>
+    </div>
+);
+
 // Component for the content of the initial welcome/general instructions modal.
 const WelcomeInstructionContent: React.FC<{ character?: Character | null; isMinigameInverted?: boolean }> = () => (
     <>
@@ -73,6 +113,7 @@ const WelcomeInstructionContent: React.FC<{ character?: Character | null; isMini
                     <li><span className="text-2xl">🚪</span> - Выйти в меню выбора профиля.</li>
                 </ul>
             </li>
+            <li><strong>Чувствительность:</strong> Ползунок в визоре регулирует скорость вращения в 3D-играх.</li>
         </ul>
         <p className="mt-4"><strong>СОВЕТ:</strong> Внимательно читайте правила перед каждой игрой.</p>
     </>
@@ -88,7 +129,7 @@ const App: React.FC = () => {
         isGlitchWin
     } = useSession();
     const { profileToDeleteId, profiles, confirmDeleteProfile, cancelDeleteProfile, isLogoutConfirmationVisible, confirmLogout, cancelLogout } = useProfile();
-    const { debugMode, playSound, seasonalEvent, seasonalAnimationsEnabled } = useSettings();
+    const { debugMode, playSound, seasonalEvent, seasonalAnimationsEnabled, isPaused, setIsPaused } = useSettings();
     const [isInitialLaunch, setIsInitialLaunch] = useState(false);
 
     // Определяем текущую мини-игру и её компонент.
@@ -100,12 +141,17 @@ const App: React.FC = () => {
         const hasSeenWelcome = localStorage.getItem('dada-spiel-has-seen-welcome');
         if (!hasSeenWelcome) {
             setIsInitialLaunch(true);
-            showInstructionModal();
+            // Don't show immediately if we are on WARNING screen, handled in onContinue
         }
-    }, [showInstructionModal]);
+    }, []);
 
     // Управление фоновой музыкой
     useEffect(() => {
+        if (screen === GameScreen.WARNING || isPaused) {
+            // No music on warning or pause
+            return;
+        }
+
         if (screen === GameScreen.MINIGAME_PLAY && currentMinigame) {
             const musicType = getMusicForMinigame(currentMinigame.id);
             if (musicType !== null) {
@@ -127,7 +173,7 @@ const App: React.FC = () => {
             // Stop music on any other screen (intros, outros, etc.)
             stopMusic();
         }
-    }, [screen, currentMinigame, seasonalEvent, seasonalAnimationsEnabled]);
+    }, [screen, currentMinigame, seasonalEvent, seasonalAnimationsEnabled, isPaused]);
     
     const profilePendingDeletion = profiles.find(p => p.id === profileToDeleteId);
 
@@ -140,8 +186,18 @@ const App: React.FC = () => {
     const InstructionContentComponent = currentMinigame ? instructionData[currentMinigame.id]?.content : WelcomeInstructionContent;
     const instructionTitle = currentMinigame ? instructionData[currentMinigame.id]?.title : "СООБЩЕНИЕ С ПРИВЕТОМ!";
 
+    const handleWarningContinue = () => {
+        playSound(SoundType.BUTTON_CLICK); // Initialize audio context
+        setScreen(GameScreen.PROFILE_SELECTION);
+        if (isInitialLaunch) {
+            showInstructionModal();
+        }
+    };
+
     const renderScreen = () => {
         switch (screen) {
+            case GameScreen.WARNING:
+                return <WarningScreen onContinue={handleWarningContinue} />;
             case GameScreen.PROFILE_SELECTION:
                 return <ProfileSelectionScreen />;
             case GameScreen.LEADERBOARD:
@@ -209,16 +265,22 @@ const App: React.FC = () => {
     return (
         <GameWrapper>
             <div style={containerStyle} className="w-full h-full relative">
-                <HUD />
+                {screen !== GameScreen.WARNING && <HUD />}
                 <SeasonalOverlay />
                 
+                {isPaused && <PauseOverlay onResume={() => {
+                    // Force state update to remove overlay and resume logic
+                    playSound(SoundType.GENERIC_CLICK); 
+                    setIsPaused(false);
+                }} />}
+
                 <div key={screen} className="screen-content-wrapper">
                     {renderScreen()}
                 </div>
                 
                 {isGlitchWin && <GlitchWinScreen />}
 
-                {debugMode && screen !== GameScreen.DEBUG_MENU && screen !== GameScreen.DEBUG_ANIMATION_VIEWER && (
+                {debugMode && screen !== GameScreen.DEBUG_MENU && screen !== GameScreen.DEBUG_ANIMATION_VIEWER && screen !== GameScreen.WARNING && (
                     <button
                         onClick={() => setScreen(GameScreen.DEBUG_MENU)}
                         className="absolute bottom-4 right-4 pixel-button p-2 text-sm z-50 bg-purple-700 hover:bg-purple-800"

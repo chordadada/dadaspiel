@@ -82,7 +82,7 @@ const DranikiShooterWinScreen: React.FC<{ onContinue: () => void }> = ({ onConti
 }
 
 export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }> = ({ onWin, onLose }) => {
-    const { playSound } = useSettings();
+    const { playSound, sensitivity } = useSettings();
     const { isInstructionModalVisible } = useNavigation();
     const { character } = useSession();
     const isMobile = useIsMobile();
@@ -432,7 +432,9 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
         }
         
         const moveSpeed = 3.5 * dt * player.speedMult;
-        const rotSpeed = 2.0 * dt;
+        
+        // --- SENSITIVITY APPLIED HERE ---
+        const rotSpeed = 2.0 * dt * sensitivity;
 
         let turnLeft = keysPressed.current['KeyA'] || keysPressed.current['ArrowLeft'];
         let turnRight = keysPressed.current['KeyD'] || keysPressed.current['ArrowRight'];
@@ -1024,6 +1026,10 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
     const handleTouchStart = (key: string, e: React.TouchEvent) => {
         e.preventDefault(); 
         keysPressed.current[key] = true;
+        // Haptic Feedback
+        if (navigator.vibrate) {
+            navigator.vibrate(15);
+        }
     };
     const handleTouchEnd = (key: string, e: React.TouchEvent) => {
         e.preventDefault();

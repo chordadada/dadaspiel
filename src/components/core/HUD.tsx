@@ -9,7 +9,7 @@ export const HUD: React.FC = () => {
     lives, sessionScore, character, activateArtistInsight, activateFourthWall,
     abilityUsedInCase, abilityUsedInSession, absurdEdgeUsedInSession, activateAbsurdEdge
   } = useSession();
-  const { isMuted, toggleMute, seasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations } = useSettings();
+  const { isMuted, toggleMute, seasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, sensitivity, setSensitivity } = useSettings();
   const { activeProfile, requestLogout } = useProfile();
   const { screen, showInstructionModal } = useNavigation();
 
@@ -99,7 +99,7 @@ export const HUD: React.FC = () => {
     <div className="absolute top-0 left-0 right-0 pt-2 px-4 flex justify-between items-start text-2xl z-50 pointer-events-none">
       
       <div 
-        className="flex flex-col items-start gap-2 transition-all duration-300 pointer-events-auto"
+        className="flex flex-col items-start gap-2 transition-all duration-300 pointer-events-auto bg-black/80 p-2 rounded border border-gray-700"
         style={{
             animation: isHudVisible ? 'hud-glitch-in 0.3s forwards' : 'hud-glitch-out 0.3s forwards',
             opacity: isHudVisible ? 1 : 0,
@@ -107,7 +107,7 @@ export const HUD: React.FC = () => {
         }}
       >
         {activeProfile && (
-            <div className="flex flex-col items-start gap-2">
+            <div className="flex flex-col items-start gap-2 mb-2">
                 <div>SCORE: {sessionScore}</div>
                 <div className="flex items-center gap-2">
                     {character === Character.SEXISM && (
@@ -122,7 +122,7 @@ export const HUD: React.FC = () => {
                 </div>
             </div>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             <button onClick={handleToggleMute} className="pixel-button text-2xl !p-2" aria-label={isMuted ? "Включить звук" : "Выключить звук"} style={{textShadow: 'none'}}>{isMuted ? '🔇' : '🔊'}</button>
             <button onClick={handleToggleFullscreen} className="pixel-button text-2xl !p-2" aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Войти в полноэкранный режим"} style={{textShadow: 'none'}}>{isFullscreen ? '↙️' : '↗️'}</button>
             <button onClick={() => showInstructionModal()} className="pixel-button text-2xl !p-2" aria-label="Показать информацию" style={{textShadow: 'none'}}>ℹ️</button>
@@ -138,6 +138,20 @@ export const HUD: React.FC = () => {
                 </button>
             )}
             {activeProfile && <button onClick={() => requestLogout()} className="pixel-button text-2xl !p-2 bg-red-800" aria-label="Выйти в главное меню" style={{textShadow: 'none'}}>🚪</button>}
+        </div>
+        
+        {/* Sensitivity Slider */}
+        <div className="flex flex-col w-full mt-2 border-t border-gray-600 pt-2">
+            <label className="text-xs text-gray-400 mb-1">ЧУВСТВИТЕЛЬНОСТЬ</label>
+            <input 
+                type="range" 
+                min="0.5" 
+                max="2.5" 
+                step="0.1" 
+                value={sensitivity} 
+                onChange={(e) => setSensitivity(parseFloat(e.target.value))}
+                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-400"
+            />
         </div>
       </div>
       

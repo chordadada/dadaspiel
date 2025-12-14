@@ -36,6 +36,10 @@ interface SettingsContextType {
     seasonalAnimationsEnabled: boolean;
     toggleSeasonalAnimations: () => void;
     seasonalMessage: string | null;
+    sensitivity: number;
+    setSensitivity: (val: number) => void;
+    isPaused: boolean;
+    setIsPaused: (paused: boolean) => void;
 }
 
 interface ProfileContextType {
@@ -177,7 +181,7 @@ const MESSAGES_BY_EVENT: Partial<Record<SeasonalEvent, string[]>> = {
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     // ---- Состояние ----
-    const [screen, _setScreen] = useState<GameScreen>(GameScreen.PROFILE_SELECTION);
+    const [screen, _setScreen] = useState<GameScreen>(GameScreen.WARNING); // Start with warning screen
     const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
     const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
     const [profileToDeleteId, setProfileToDeleteId] = useState<string | null>(null);
@@ -206,15 +210,41 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [seasonalEvent, setSeasonalEvent] = useState<SeasonalEvent>(SeasonalEvent.NONE);
     const [seasonalAnimationsEnabled, setSeasonalAnimationsEnabled] = useState(true);
     const [seasonalMessage, setSeasonalMessage] = useState<string | null>(null);
+    const [sensitivity, setSensitivity] = useState(1.0);
+    const [isPaused, setIsPaused] = useState(false);
 
     // --- Modal States ---
     const [isInstructionModalOpen, setIsInstructionModalOpen] = useState(false);
     const [isLogoutConfirmationVisible, setIsLogoutConfirmationVisible] = useState(false);
 
+    // --- Window Focus/Blur Handling ---
+    useEffect(() => {
+        const handleBlur = () => {
+            if (screen === GameScreen.MINIGAME_PLAY) {
+                setIsPaused(true);
+                // We rely on stopMusic/startMusic in App.tsx or component level, 
+                // or we could mute audio context here.
+                // But visual pause is handled by rendering.
+                stopMusic(); 
+            }
+        };
+        const handleFocus = () => {
+            // When focus returns, user has to manually unpause usually, 
+            // or we keep it paused until they click "Resume"
+        };
+
+        window.addEventListener('blur', handleBlur);
+        window.addEventListener('focus', handleFocus);
+        return () => {
+            window.removeEventListener('blur', handleBlur);
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, [screen]);
+
     // --- Производное состояние ---
     const activeProfile = useMemo(() => profiles.find(p => p.id === activeProfileId) || null, [profiles, activeProfileId]);
     const character = useMemo(() => debugCharacter || activeProfile?.character || null, [activeProfile, debugCharacter]);
-    const isUIPaused = isInstructionModalOpen || isLogoutConfirmationVisible;
+    const isUIPaused = isInstructionModalOpen || isLogoutConfirmationVisible || isPaused;
 
     // --- Init Seasonal Event ---
     useEffect(() => {
@@ -265,6 +295,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const setScreen = useCallback((newScreen: GameScreen) => {
         if (newScreen === GameScreen.MINIGAME_INTRO) setKanilaMistakeUsedInMinigame(false);
+        setIsPaused(false); // Unpause on screen change
         _setScreen(newScreen);
     }, []);
 
@@ -505,7 +536,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // --- Memoized Context Values ---
     const navigationContextValue = useMemo(() => ({ screen, setScreen, animationToView, setAnimationToView, jumpToMinigame, isInstructionModalVisible: isUIPaused, showInstructionModal: () => setIsInstructionModalOpen(true), hideInstructionModal: () => setIsInstructionModalOpen(false) }), [screen, animationToView, isUIPaused, setScreen, jumpToMinigame]);
-    const settingsContextValue = useMemo(() => ({ debugMode, toggleDebug: () => setDebugMode(d => !d), isLogging, toggleLogging: () => setIsLogging(l => !l), setIsLogging, log, logEvent, isMuted, toggleMute, playSound, debugCharacter, setDebugCharacter, seasonalEvent, setSeasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, seasonalMessage }), [debugMode, isLogging, log, isMuted, debugCharacter, logEvent, playSound, toggleMute, seasonalEvent, setSeasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, seasonalMessage]);
+    const settingsContextValue = useMemo(() => ({ debugMode, toggleDebug: () => setDebugMode(d => !d), isLogging, toggleLogging: () => setIsLogging(l => !l), setIsLogging, log, logEvent, isMuted, toggleMute, playSound, debugCharacter, setDebugCharacter, seasonalEvent, setSeasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, seasonalMessage, sensitivity, setSensitivity, isPaused, setIsPaused }), [debugMode, isLogging, log, isMuted, debugCharacter, logEvent, playSound, toggleMute, seasonalEvent, setSeasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, seasonalMessage, sensitivity, isPaused]);
     const profileContextValue = useMemo(() => ({ profiles, activeProfile, profileToDeleteId, createProfile, selectProfile, deleteProfile, confirmDeleteProfile, cancelDeleteProfile, requestLogout, dynamicCases, isLogoutConfirmationVisible, confirmLogout, cancelLogout, unlockAllLevels }), [profiles, activeProfile, profileToDeleteId, createProfile, selectProfile, deleteProfile, confirmDeleteProfile, cancelDeleteProfile, requestLogout, dynamicCases, isLogoutConfirmationVisible, confirmLogout, cancelLogout, unlockAllLevels]);
     const sessionContextValue = useMemo(() => ({ character, currentCase, minigameIndex, lives, sessionScore, isSlowMo, isMinigameInverted, abilityUsedInCase, abilityUsedInSession, forcedOutro, absurdEdgeUsedInSession, isAbsurdEdgeBonusRound, isGlitchWin, glitchWinVideoUrl, startCase, winMinigame, loseMinigame, killPlayer, addLife: (amount = 1) => setLives(l => l + amount), addScore: (points) => setSessionScore(s => s + points), activateArtistInsight, activateFourthWall, handleMistake, activateAbsurdEdge, proceedAfterGlitchWin }), [character, currentCase, minigameIndex, lives, sessionScore, isSlowMo, isMinigameInverted, abilityUsedInCase, abilityUsedInSession, forcedOutro, absurdEdgeUsedInSession, isAbsurdEdgeBonusRound, isGlitchWin, glitchWinVideoUrl, startCase, winMinigame, loseMinigame, killPlayer, activateArtistInsight, activateFourthWall, handleMistake, activateAbsurdEdge, proceedAfterGlitchWin]);
 

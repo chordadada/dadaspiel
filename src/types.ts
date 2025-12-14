@@ -2,7 +2,8 @@
 // Перечисление (enum) для всех возможных экранов в игре.
 // Используется для управления тем, какой компонент отображается в данный момент.
 export enum GameScreen {
-  PROFILE_SELECTION,  // Экран выбора и создания профиля игрока (новый стартовый экран)
+  WARNING,            // Экран предупреждения об эпилепсии (самый первый)
+  PROFILE_SELECTION,  // Экран выбора и создания профиля игрока
   LEADERBOARD,        // Экран таблицы рекордов
   START_SCREEN,       // Теперь это экран выбора персонажа для нового профиля
   CASE_SELECTION,     // Экран выбора "Дела" (уровня)
@@ -28,7 +29,7 @@ export enum SeasonalEvent {
   NEW_YEAR = "NEW_YEAR", // Оливье и майонез
   APRIL_FOOLS = "APRIL_FOOLS", // Бюрократия и скука
   HALLOWEEN = "HALLOWEEN", // Экзистенциальный ужас
-  DADA_BIRTHDAY = "DADA_BIRTHDAY", // 2 августа (День Рождения Дада)
+  DADA_BIRTHDAY = "DADA_BIRTHDAY", // 2 августа (День ВДВ + Дада)
   SEPTEMBER_3 = "SEPTEMBER_3", // Шуфутинский
   GONDOLIER_DAY = "GONDOLIER_DAY", // 4 марта
   GLITCH_DAY = "GLITCH_DAY", // 29 мая (День Глюка)
