@@ -251,12 +251,12 @@ export const TanecUZakrytyhDverey: React.FC<{ onWin: () => void; onLose: () => v
     const { isInstructionModalVisible } = useNavigation();
     
     const settings = useMemo(() => {
-        const baseSettings = { phaseDuration: 7, maxScore: 15, iconLife: 1.5 };
+        const baseSettings = { phaseDuration: 7, maxScore: 15, iconLife: 1.5, aiAggression: 0.02, aiMistakeChance: 0.005 };
         switch(character) {
             case Character.KANILA: // Easy
-                return { phaseDuration: 9, maxScore: 12, iconLife: 1.8 };
+                return { phaseDuration: 9, maxScore: 12, iconLife: 1.8, aiAggression: 0.01, aiMistakeChance: 0.025 }; // Lazy & Clumsy
             case Character.BLACK_PLAYER: // Hard
-                return { phaseDuration: 6, maxScore: 18, iconLife: 1.2 };
+                return { phaseDuration: 6, maxScore: 18, iconLife: 1.2, aiAggression: 0.04, aiMistakeChance: 0.0005 }; // Aggressive & Precise
             default: // Medium (Sexism)
                 return baseSettings;
         }
@@ -376,11 +376,80 @@ export const TanecUZakrytyhDverey: React.FC<{ onWin: () => void; onLose: () => v
             }]);
         }
 
-        // Icon & Feedback lifetime
-        setIcons(prev => prev.map(i => ({...i, life: i.life - dtSec})).filter(i => i.life > 0));
+        // Icon & Feedback lifetime + AI Logic for Guard Phase
+        setIcons(prev => {
+            const keptIcons: Icon[] = [];
+            let aiScoreAddGuard = 0;
+            let aiScoreAddPlayer = 0;
+            const newFeedbacks: Feedback[] = [];
+
+            prev.forEach(i => {
+                const newLife = i.life - dtSec;
+                
+                // AI Logic active in Guard phase
+                if (phase === 'guard' && newLife > 0) {
+                    const normDt = deltaTime / 16;
+                    
+                    // 1. Guard collects HER icons (Success)
+                    if (i.type === 'guard' || i.type === 'guard_booster') {
+                        const chance = settings.aiAggression * normDt;
+                        if (Math.random() < chance) {
+                            const points = i.type === 'guard_booster' ? 2 : 1;
+                            aiScoreAddGuard += points;
+                            newFeedbacks.push({
+                                id: feedbackId.current++,
+                                text: "МОЁ!", 
+                                x: i.x,
+                                y: i.y,
+                                life: 1,
+                                color: 'text-red-500 font-bold'
+                            });
+                            return; 
+                        }
+                    }
+                    // 2. Guard accidentally collects PLAYER icons (Mistake)
+                    else if (i.type === 'player' || i.type === 'player_booster') {
+                        const chance = settings.aiMistakeChance * normDt;
+                        if (Math.random() < chance) {
+                            const points = i.type === 'player_booster' ? 2 : 1;
+                            aiScoreAddPlayer += points;
+                            newFeedbacks.push({
+                                id: feedbackId.current++,
+                                text: "ОЙ!", 
+                                x: i.x,
+                                y: i.y,
+                                life: 1,
+                                color: 'text-blue-400 font-bold'
+                            });
+                            return; 
+                        }
+                    }
+                }
+
+                if (newLife > 0) {
+                    keptIcons.push({...i, life: newLife});
+                }
+            });
+
+            if (aiScoreAddGuard > 0) {
+                setGuardScore(s => s + aiScoreAddGuard);
+                playSound(SoundType.GENERIC_CLICK);
+            }
+            if (aiScoreAddPlayer > 0) {
+                setPlayerScore(s => s + aiScoreAddPlayer);
+                playSound(SoundType.ITEM_CATCH_GOOD); // Beneficial for player
+            }
+            
+            if (newFeedbacks.length > 0) {
+                setFeedback(f => [...f, ...newFeedbacks]);
+            }
+
+            return keptIcons;
+        });
+
         setFeedback(prev => prev.map(f => ({...f, life: f.life - dtSec, y: f.y - 10 * dtSec})).filter(f => f.life > 0));
 
-    }, [phase, status, round, settings.iconLife]), status === 'playing' && !isInstructionModalVisible);
+    }, [phase, status, round, settings.iconLife, settings.aiAggression, settings.aiMistakeChance, playSound]), status === 'playing' && !isInstructionModalVisible);
 
     const handleIconClick = (clickedIcon: Icon) => {
         if (phase === 'intro' || phase === 'end') return;
@@ -498,8 +567,35 @@ export const TanecUZakrytyhDverey: React.FC<{ onWin: () => void; onLose: () => v
             </>
         )
     }
+    
+    // --- LOSE SCREEN ---
     if (status === 'lost') {
-        return null;
+        return (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-red-900/95 animate-[fadeIn_0.2s]">
+                <style>{`
+                    @keyframes door-slam {
+                        0% { transform: scale(3); opacity: 0; }
+                        50% { transform: scale(1); opacity: 1; }
+                        55% { transform: scale(1.1); }
+                        100% { transform: scale(1); }
+                    }
+                    @keyframes anger-shake {
+                        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+                        25% { transform: translate(-5px, 5px) rotate(-5deg); }
+                        50% { transform: translate(5px, -5px) rotate(5deg); }
+                        75% { transform: translate(-5px, -5px) rotate(-5deg); }
+                    }
+                `}</style>
+                <div className="transform scale-150 mb-12 animate-[door-slam_0.5s_ease-out_forwards]">
+                    <div style={{animation: 'anger-shake 0.5s infinite'}}>
+                        <PixelArt artData={GUARD_ART_DATA} palette={PIXEL_ART_PALETTE} pixelSize={8} />
+                    </div>
+                </div>
+                <h2 className="text-6xl text-white font-black mb-4 uppercase tracking-widest border-4 border-white p-4 transform -rotate-6 shadow-[10px_10px_0px_#000]">ЗАКРЫТО!</h2>
+                <p className="text-2xl text-red-200 mt-4 font-mono bg-black/50 px-4 py-2 rounded">САНИТАРНЫЙ ДЕНЬ</p>
+                <p className="text-xl text-red-300 mt-2 font-mono italic">И вообще!</p>
+            </div>
+        );
     }
 
     return (
