@@ -632,7 +632,7 @@ export const PereverniKalendar: React.FC<{ onWin: () => void; onLose: () => void
               <>
                 <MinigameHUD>
                     <div className="w-full text-center text-yellow-300">
-                        Поддерживай огонь, переворачивая календари!
+                        Поддерживайте огонь, переворачивая календари!
                     </div>
                 </MinigameHUD>
                 

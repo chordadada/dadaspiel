@@ -53,6 +53,12 @@ export const DebugMenu: React.FC = () => {
         action();
     }
 
+    const handleResetTutorial = () => {
+        playSound(SoundType.DESTROY);
+        localStorage.removeItem('dada-spiel-tutorial-complete');
+        window.location.reload();
+    };
+
     return (
         <div className="flex flex-col items-center h-full p-4 overflow-y-auto">
             <h2 className="text-3xl mt-4 mb-4">ДАДА АЛАДКИ</h2>
@@ -65,6 +71,9 @@ export const DebugMenu: React.FC = () => {
                 </button>
                 <button onClick={() => handleActionClick(unlockAllLevels)} className="pixel-button p-2 text-sm bg-green-700 hover:bg-green-600">
                     Открыть все
+                </button>
+                <button onClick={handleResetTutorial} className="pixel-button p-2 text-sm bg-red-900 hover:bg-red-800 border-red-500">
+                    Сброс обучения
                 </button>
                 <button onClick={() => handleActionClick(() => setScreen(GameScreen.PROFILE_SELECTION))} className="pixel-button p-2 text-sm bg-red-700">
                     Главное меню

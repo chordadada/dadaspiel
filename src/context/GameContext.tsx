@@ -135,8 +135,13 @@ const generateUUID = () => {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
 };
 
+// --- MANUAL OVERRIDE FOR TESTING HOLIDAYS ---
+const FORCE_HOLIDAY_TEST = false; 
+
 // Helper to calculate seasonal event
 const getSeasonalEvent = (): SeasonalEvent => {
+    if (FORCE_HOLIDAY_TEST) return SeasonalEvent.DADA_BIRTHDAY;
+
     const today = new Date();
     const month = today.getMonth(); // 0-indexed (0 = Jan, 11 = Dec)
     const date = today.getDate();

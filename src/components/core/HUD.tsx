@@ -4,7 +4,21 @@ import { useSession, useSettings, useProfile, useNavigation } from '../../contex
 import { playSound, SoundType } from '../../utils/AudioEngine';
 import { Character, GameScreen, SeasonalEvent } from '../../../types';
 
-export const HUD: React.FC = () => {
+interface HUDProps {
+    highlightVisor?: boolean;
+    highlightControls?: boolean;
+    highlightFullscreen?: boolean;
+    onVisorClick?: () => void;
+    onFullscreenClick?: () => void;
+}
+
+export const HUD: React.FC<HUDProps> = ({ 
+    highlightVisor = false, 
+    highlightControls = false, 
+    highlightFullscreen = false,
+    onVisorClick, 
+    onFullscreenClick 
+}) => {
   const { 
     lives, sessionScore, character, activateArtistInsight, activateFourthWall,
     abilityUsedInCase, abilityUsedInSession, absurdEdgeUsedInSession, activateAbsurdEdge
@@ -18,7 +32,10 @@ export const HUD: React.FC = () => {
   // States for HUD visibility
   const [isSticky, setIsSticky] = useState(false); // For permanent visibility toggle
   const [isHovering, setIsHovering] = useState(false); // For temporary visibility on hover/tap
-  const isHudVisible = isSticky || isHovering;
+  
+  // Force visibility if controls are highlighted (Step 2), but NOT if just visor is highlighted (Step 1)
+  const isHudVisible = isSticky || isHovering || highlightControls;
+  const isTutorialMode = highlightVisor || highlightControls || highlightFullscreen;
 
   // Refs for interaction logic
   const hideTimerRef = useRef<number | null>(null);
@@ -29,6 +46,7 @@ export const HUD: React.FC = () => {
   const handleDesktopClick = () => {
     if ('ontouchstart' in window) return;
     setIsSticky(prev => !prev);
+    if (onVisorClick) onVisorClick();
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -49,6 +67,10 @@ export const HUD: React.FC = () => {
             }, 5000);
         }
     }
+    
+    // Explicit tutorial trigger for touch
+    if (onVisorClick) onVisorClick();
+    
     lastTapRef.current = now;
   };
 
@@ -78,9 +100,12 @@ export const HUD: React.FC = () => {
 
   const handleToggleFullscreen = () => {
     playSound(SoundType.BUTTON_CLICK);
+    if (onFullscreenClick) onFullscreenClick();
+    
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
-        alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        // alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        console.warn("Fullscreen failed", err);
       });
     } else {
       if (document.exitFullscreen) {
@@ -96,14 +121,17 @@ export const HUD: React.FC = () => {
   }, []);
 
   return (
-    <div className="absolute top-0 left-0 right-0 pt-2 px-4 flex justify-between items-start text-2xl z-50 pointer-events-none">
+    <div className={`absolute top-0 left-0 right-0 pt-2 px-4 flex justify-between items-start text-2xl pointer-events-none ${isTutorialMode ? 'z-[65]' : 'z-50'}`}>
       
+      {/* Left Controls Panel */}
       <div 
-        className="flex flex-col items-start gap-2 transition-all duration-300 pointer-events-auto bg-black/80 p-2 rounded border border-gray-700"
+        className={`flex flex-col items-start gap-2 transition-all duration-300 pointer-events-auto bg-black/80 p-2 rounded border border-gray-700 ${highlightControls ? 'z-[70] ring-4 ring-yellow-400 relative' : ''}`}
         style={{
             animation: isHudVisible ? 'hud-glitch-in 0.3s forwards' : 'hud-glitch-out 0.3s forwards',
             opacity: isHudVisible ? 1 : 0,
-            transformOrigin: 'top left'
+            transformOrigin: 'top left',
+            filter: (isTutorialMode && !highlightControls) ? 'brightness(0.3)' : 'none',
+            pointerEvents: (isTutorialMode && !highlightControls) ? 'none' : 'auto'
         }}
       >
         {activeProfile && (
@@ -124,7 +152,7 @@ export const HUD: React.FC = () => {
         )}
         <div className="flex flex-wrap items-center gap-2">
             <button onClick={handleToggleMute} className="pixel-button text-2xl !p-2" aria-label={isMuted ? "Включить звук" : "Выключить звук"} style={{textShadow: 'none'}}>{isMuted ? '🔇' : '🔊'}</button>
-            <button onClick={handleToggleFullscreen} className="pixel-button text-2xl !p-2" aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Войти в полноэкранный режим"} style={{textShadow: 'none'}}>{isFullscreen ? '↙️' : '↗️'}</button>
+            <button onClick={handleToggleFullscreen} className={`pixel-button text-2xl !p-2 ${highlightFullscreen ? 'animate-bounce border-yellow-300' : ''}`} aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Войти в полноэкранный режим"} style={{textShadow: 'none'}}>{isFullscreen ? '↙️' : '↗️'}</button>
             <button onClick={() => showInstructionModal()} className="pixel-button text-2xl !p-2" aria-label="Показать информацию" style={{textShadow: 'none'}}>ℹ️</button>
             {/* Seasonal Toggle Button - Only visible during holidays */}
             {seasonalEvent !== SeasonalEvent.NONE && (
@@ -155,8 +183,9 @@ export const HUD: React.FC = () => {
         </div>
       </div>
       
+      {/* Visor Toggle Button */}
       <div 
-        className="absolute left-1/2 -translate-x-1/2 top-2 w-auto h-auto pointer-events-auto cursor-pointer flex items-center justify-center animate-pulse p-2"
+        className={`absolute left-1/2 -translate-x-1/2 top-2 w-auto h-auto pointer-events-auto cursor-pointer flex items-center justify-center animate-pulse p-2 ${highlightVisor ? 'z-[70] bg-yellow-500/20 rounded-full ring-4 ring-yellow-400' : ''}`}
         onClick={handleDesktopClick}
         onTouchStart={handleTouchStart}
         onMouseEnter={handleMouseEnter}
@@ -164,6 +193,10 @@ export const HUD: React.FC = () => {
         aria-label="Показать/скрыть интерфейс"
         role="button"
         tabIndex={0}
+        style={{
+             filter: (isTutorialMode && !highlightVisor) ? 'brightness(0.3)' : 'none',
+             pointerEvents: (isTutorialMode && !highlightVisor) ? 'none' : 'auto'
+        }}
       >
         <div className="flex items-center justify-center gap-1.5">
             <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -172,9 +205,13 @@ export const HUD: React.FC = () => {
         </div>
       </div>
 
+      {/* Right Stats Panel */}
       <div 
           className="flex flex-col items-end gap-3 transition-opacity duration-300"
-          style={{ opacity: isHudVisible ? 1 : 0 }}
+          style={{ 
+              opacity: isHudVisible ? 1 : 0,
+              visibility: isTutorialMode ? 'hidden' : 'visible'
+          }}
       >
         {activeProfile && (
             <div className="flex items-center">

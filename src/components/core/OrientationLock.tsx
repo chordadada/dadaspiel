@@ -46,18 +46,11 @@ export const OrientationLock: React.FC = () => {
             `}</style>
             <div className="orientation-lock-overlay">
                 <div className="rotate-icon"></div>
-                <h1 className="text-4xl font-bold text-yellow-300 mb-4">ДАДАШПИЛЬ</h1>
-                <h2 className="text-2xl mb-2">Пожалуйста, поверните устройство</h2>
-                <p className="mt-4 text-base text-gray-400 max-w-md">
+                <h1 className="text-6xl font-bold text-yellow-300 mb-4">ДАДАШПИЛЬ</h1>
+                <h2 className="text-4xl mb-2">Пожалуйста, поверните устройство!</h2>
+                <p className="mt-8 text-xl text-gray-400 max-w-md">
                     Игра работает только в горизонтальном режиме.
                 </p>
-                <div className="mt-8 p-4 border border-gray-600 rounded bg-gray-900/50">
-                    <p className="text-sm text-yellow-100">
-                        💡 <strong>Совет:</strong> Для лучшего погружения нажмите кнопку 
-                        <span className="inline-block mx-1 text-xl">↗️</span> 
-                        в меню (три точки), чтобы развернуть игру на весь экран.
-                    </p>
-                </div>
             </div>
         </>
     );

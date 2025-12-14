@@ -239,7 +239,7 @@ export const startMusic = (type: MusicType) => {
             const audio = new Audio(audioPath);
             audio.loop = true;
             audio.volume = isMutedGlobally ? 0 : VOL_MP3;
-						// Промис может быть отклонен из-за политики автовоспроизведения, это нормально
+            // Промис может быть отклонен из-за политики автовоспроизведения, это нормально
             audio.play().catch(() => {});
             activeHtmlAudio = audio;
             musicNodes.push({ disconnect: () => { if (activeHtmlAudio === audio) { audio.pause(); activeHtmlAudio = null; } } });
@@ -431,8 +431,7 @@ export const startMusic = (type: MusicType) => {
                 }
 
                 beat++; 
-            }, 125); // 120 BPM (125ms per 16th note? No, 500ms per beat = 120bpm. This is 8th notes at 240 or 16th at 120)
-            // Let's assume tick is 1/4 beat. 120 BPM = 2bps. 1 beat = 500ms. 1/4 beat = 125ms.
+            }, 125); 
             musicNodes.push({ disconnect: () => clearInterval(scheduler) }); 
             break; 
         }

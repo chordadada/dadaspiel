@@ -324,7 +324,7 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
                 {gamePhase === 'recover' && (
                     <>
                         <div className="absolute left-10 bottom-10 h-3/4 w-12 pixel-border bg-black z-20"><div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-yellow-400 via-orange-500 to-red-600" style={{height: `${chokeLevel}%`}}></div></div>
-                        <div className="absolute bottom-10 text-center text-yellow-300 z-30 p-4 pointer-events-none"><p className="text-2xl animate-pulse">Кликай по голове, Геймлих!</p></div>
+                        <div className="absolute bottom-10 text-center text-yellow-300 z-30 p-4 pointer-events-none"><p className="text-2xl animate-pulse">Давайте, Геймлих!</p></div>
                     </>
                 )}
             </>}

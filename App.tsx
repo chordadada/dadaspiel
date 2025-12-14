@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { GameScreen, Character, SeasonalEvent } from './types';
 import { GameProvider, useNavigation, useSession, useProfile, useSettings } from './src/context/GameContext';
 import { MusicType, SoundType, startMusic, stopMusic, preloadMusic } from './src/utils/AudioEngine';
@@ -57,34 +57,15 @@ const getSeasonalMusic = (event: SeasonalEvent): MusicType | null => {
     }
 }
 
-// Component for the initial warning screen
-const WarningScreen: React.FC<{ onContinue: () => void }> = ({ onContinue }) => {
-    const [canContinue, setCanContinue] = useState(false);
-
-    useEffect(() => {
-        const timer = setTimeout(() => setCanContinue(true), 3000);
-        return () => clearTimeout(timer);
-    }, []);
-
-    return (
-        <div className="absolute inset-0 bg-black z-[100] flex flex-col items-center justify-center p-8 text-center border-4 border-white">
-            <h1 className="text-4xl md:text-6xl text-red-600 font-bold mb-8 animate-pulse">ВНИМАНИЕ!</h1>
-            <p className="text-xl md:text-2xl text-white mb-4">
-                Эта игра содержит быстро меняющиеся изображения, вспышки света и абсурдные смыслы.
-            </p>
-            <p className="text-lg text-gray-400 mb-8">
-                Если вы страдаете эпилепсией или отсутствием чувства юмора — проконсультируйтесь с врачом.
-            </p>
-            {canContinue ? (
-                <button onClick={onContinue} className="pixel-button p-4 text-2xl animate-[fadeIn_0.5s]">
-                    ПОНЯТНО
-                </button>
-            ) : (
-                <p className="text-sm text-gray-600 animate-pulse">Загрузка реальности...</p>
-            )}
-        </div>
-    );
-};
+// Tutorial State Enum
+enum TutorialStep {
+    NONE = 0,
+    VISOR = 1,
+    FULLSCREEN = 2,
+    CONTROLS = 3,
+    WARNING = 4,
+    FINAL_TIP = 5
+}
 
 // Simple Pause Overlay
 const PauseOverlay: React.FC<{ onResume: () => void }> = ({ onResume }) => (
@@ -98,9 +79,8 @@ const PauseOverlay: React.FC<{ onResume: () => void }> = ({ onResume }) => (
 );
 
 // Component for the content of the initial welcome/general instructions modal.
-const WelcomeInstructionContent: React.FC<{ character?: Character | null; isMinigameInverted?: boolean }> = () => (
+const WelcomeInstructionContent: React.FC<{ character?: Character | null; isMinigameInverted?: boolean; seasonalEvent?: SeasonalEvent }> = ({ seasonalEvent }) => (
     <>
-        <p>Добро пожаловать в ДАДАШПИЛЬ!</p>
         <p className="mt-4">ЭТО ФАНТАЗМ, состоящий из серии сюрреалистических снов.</p>
         <p className="mt-4 text-yellow-300"><strong>Управление:</strong></p>
         <ul className="list-disc list-inside space-y-2 mt-2">
@@ -111,6 +91,9 @@ const WelcomeInstructionContent: React.FC<{ character?: Character | null; isMini
                     <li><span className="text-2xl">↗️/↙️</span> - Войти/выйти из полноэкранного режима.</li>
                     <li><span className="text-2xl">ℹ️</span> - Показать это окно или правила текущего сна.</li>
                     <li><span className="text-2xl">🚪</span> - Выйти в меню выбора профиля.</li>
+                    {seasonalEvent && seasonalEvent !== SeasonalEvent.NONE && (
+                        <li><span className="text-2xl">🎉</span> - Вкл/Выкл праздничное оформление.</li>
+                    )}
                 </ul>
             </li>
             <li><strong>Чувствительность:</strong> Ползунок в визоре регулирует скорость вращения в 3D-играх.</li>
@@ -118,6 +101,92 @@ const WelcomeInstructionContent: React.FC<{ character?: Character | null; isMini
         <p className="mt-4"><strong>СОВЕТ:</strong> Внимательно читайте правила перед каждой игрой.</p>
     </>
 );
+
+// Component for the Tutorial Overlay
+const TutorialOverlay: React.FC<{ step: TutorialStep; onNext: () => void; seasonalEvent: SeasonalEvent }> = ({ step, onNext, seasonalEvent }) => {
+    const [canContinue, setCanContinue] = useState(false);
+
+    useEffect(() => {
+        setCanContinue(false);
+        if (step === TutorialStep.WARNING) {
+            const timer = setTimeout(() => setCanContinue(true), 3000);
+            return () => clearTimeout(timer);
+        } else {
+            setCanContinue(true);
+        }
+    }, [step]);
+
+    return (
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-[60] flex flex-col items-center justify-center text-center p-4 animate-[fadeIn_0.3s]">
+            {step === TutorialStep.VISOR && (
+                <>
+                    <div className="absolute top-14 left-1/2 -translate-x-1/2 text-6xl animate-bounce text-yellow-300">⬆️</div>
+                    <div className="mt-20 bg-black/80 p-6 pixel-border max-w-md">
+                        <h3 className="text-2xl text-yellow-300 mb-2">ЭТО ВИЗОР</h3>
+                        <p className="text-xl">Нажми на три точки сверху, чтобы открыть меню игры.</p>
+                    </div>
+                </>
+            )}
+
+            {step === TutorialStep.FULLSCREEN && (
+                <>
+                    <div className="absolute top-16 left-28 text-6xl animate-bounce text-yellow-300 transform -rotate-45">⬆️</div>
+                    <div className="mt-20 bg-black/80 p-6 pixel-border max-w-md">
+                        <h3 className="text-2xl text-yellow-300 mb-2">ПОГРУЖЕНИЕ</h3>
+                        <p className="text-xl">Нажми кнопку ↗️, чтобы развернуть игру на весь экран.</p>
+                    </div>
+                </>
+            )}
+
+            {step === TutorialStep.CONTROLS && (
+                <div className="bg-black p-6 pixel-border max-w-lg">
+                    <h3 className="text-3xl text-yellow-300 mb-6">УПРАВЛЕНИЕ</h3>
+                    <div className="space-y-4 text-left text-lg">
+                        <p><span className="text-2xl">🔊</span> — Вкл/Выкл звук.</p>
+                        <p><span className="text-2xl">ℹ️</span> — Описание текущего сна.</p>
+                        <p><span className="text-2xl">🚪</span> — Выход в меню персонажей.</p>
+                        {seasonalEvent !== SeasonalEvent.NONE && (
+                            <p><span className="text-2xl">🎉</span> — Вкл/Выкл праздничное оформление.</p>
+                        )}
+                        <p><strong>Чувствительность:</strong> Ползунок для настройки скорости в 3D играх.</p>
+                    </div>
+                    <button onClick={onNext} className="pixel-button p-3 text-xl mt-8 w-full bg-blue-700">
+                        ДАЛЬШЕ
+                    </button>
+                </div>
+            )}
+
+            {step === TutorialStep.WARNING && (
+                <div className="bg-red-900/90 p-8 pixel-border max-w-2xl border-red-500">
+                    <h1 className="text-4xl md:text-5xl text-white font-bold mb-6 animate-pulse">ВНИМАНИЕ!</h1>
+                    <p className="text-xl md:text-2xl text-white mb-4">
+                        Эта игра содержит быстро меняющиеся изображения, вспышки света и абсурдные смыслы.
+                    </p>
+                    <p className="text-lg text-gray-300 mb-8">
+                        Если вы страдаете эпилепсией или отсутствием чувства юмора — проконсультируйтесь с врачом.
+                    </p>
+                    {canContinue ? (
+                        <button onClick={onNext} className="pixel-button p-4 text-2xl w-full bg-white text-black hover:bg-gray-200">
+                            ПОНЯТНО
+                        </button>
+                    ) : (
+                        <p className="text-sm text-gray-400 animate-pulse">Загрузка реальности...</p>
+                    )}
+                </div>
+            )}
+
+            {step === TutorialStep.FINAL_TIP && (
+                <div className="bg-green-900/90 p-8 pixel-border max-w-lg">
+                    <h3 className="text-3xl text-yellow-300 mb-4">ПОСЛЕДНИЙ СОВЕТ</h3>
+                    <p className="text-2xl mb-8">Внимательно читайте правила перед каждым сном!</p>
+                    <button onClick={onNext} className="pixel-button p-4 text-3xl w-full bg-yellow-500 text-black hover:bg-yellow-400">
+                        ИГРАТЬ
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
 
 // Главный компонент приложения, который отвечает за отображение нужного экрана.
 const App: React.FC = () => {
@@ -131,52 +200,70 @@ const App: React.FC = () => {
     const { profileToDeleteId, profiles, confirmDeleteProfile, cancelDeleteProfile, isLogoutConfirmationVisible, confirmLogout, cancelLogout } = useProfile();
     const { debugMode, playSound, seasonalEvent, seasonalAnimationsEnabled, isPaused, setIsPaused } = useSettings();
     const [isInitialLaunch, setIsInitialLaunch] = useState(false);
+    
+    // Tutorial State
+    const [tutorialStep, setTutorialStep] = useState<TutorialStep>(TutorialStep.NONE);
 
     // Определяем текущую мини-игру и её компонент.
     const currentMinigame = currentCase?.minigames[minigameIndex];
     const MinigameComponent = currentMinigame ? minigameComponentMap[currentMinigame.id] : null;
 
-    // Check for first launch to show welcome instructions
+    // Check for first launch / Tutorial logic
     useEffect(() => {
-        const hasSeenWelcome = localStorage.getItem('dada-spiel-has-seen-welcome');
-        if (!hasSeenWelcome) {
-            setIsInitialLaunch(true);
-            // Don't show immediately if we are on WARNING screen, handled in onContinue
+        const hasSeenTutorial = localStorage.getItem('dada-spiel-tutorial-complete');
+        
+        if (!hasSeenTutorial) {
+            setTutorialStep(TutorialStep.VISOR);
+        } else {
+            // Returning user: Skip everything, go straight to menu
+            setTutorialStep(TutorialStep.NONE);
         }
+        
+        // We set screen to PROFILE_SELECTION initially via Context default or below,
+        // but the overlay will block interaction if tutorialStep is not NONE.
+        setScreen(GameScreen.PROFILE_SELECTION);
         
         // Start background music loading
         preloadMusic();
-    }, []);
+    }, []); // Run once on mount
+
+    const advanceTutorial = () => {
+        playSound(SoundType.BUTTON_CLICK);
+        if (tutorialStep === TutorialStep.VISOR) setTutorialStep(TutorialStep.FULLSCREEN);
+        else if (tutorialStep === TutorialStep.FULLSCREEN) setTutorialStep(TutorialStep.CONTROLS);
+        else if (tutorialStep === TutorialStep.CONTROLS) setTutorialStep(TutorialStep.WARNING);
+        else if (tutorialStep === TutorialStep.WARNING) setTutorialStep(TutorialStep.FINAL_TIP);
+        else if (tutorialStep === TutorialStep.FINAL_TIP) {
+            setTutorialStep(TutorialStep.NONE);
+            localStorage.setItem('dada-spiel-tutorial-complete', 'true');
+            // If it's a fresh install, we might want to show the Welcome modal too, or consider the tutorial enough.
+            // Let's assume the tutorial covers the basics, but specific game rules are in 'ℹ️'.
+        }
+    };
 
     // Управление фоновой музыкой
     useEffect(() => {
-        if (screen === GameScreen.WARNING || isPaused) {
-            // No music on warning or pause
+        if (isPaused || tutorialStep === TutorialStep.WARNING) { // Silence on warning
             return;
         }
 
+        // Music logic
         if (screen === GameScreen.MINIGAME_PLAY && currentMinigame) {
             const musicType = getMusicForMinigame(currentMinigame.id);
-            if (musicType !== null) {
-                startMusic(musicType);
-            } else {
-                // Если тип не возвращен (например для DranikiShooter 6-3, который сам управляет музыкой), ничего не делаем или останавливаем старую
-                if (currentMinigame.id !== "6-3") {
-                    stopMusic();
-                }
-            }
+            if (musicType !== null) startMusic(musicType);
+            else if (currentMinigame.id !== "6-3") stopMusic();
         } else if (screen === GameScreen.PROFILE_SELECTION || screen === GameScreen.CASE_SELECTION || screen === GameScreen.LEADERBOARD) {
             const seasonalMusic = getSeasonalMusic(seasonalEvent);
-            if (seasonalAnimationsEnabled && seasonalMusic !== null) {
+            // Prevent holiday music from playing during the tutorial
+            if (seasonalAnimationsEnabled && seasonalMusic !== null && tutorialStep === TutorialStep.NONE) {
                 startMusic(seasonalMusic);
             } else {
                 startMusic(MusicType.MENU);
             }
         } else {
-            // Stop music on any other screen (intros, outros, etc.)
             stopMusic();
         }
-    }, [screen, currentMinigame, seasonalEvent, seasonalAnimationsEnabled, isPaused]);
+    }, [screen, currentMinigame, seasonalEvent, seasonalAnimationsEnabled, isPaused, tutorialStep]);
     
     const profilePendingDeletion = profiles.find(p => p.id === profileToDeleteId);
 
@@ -187,20 +274,13 @@ const App: React.FC = () => {
         : undefined;
     
     const InstructionContentComponent = currentMinigame ? instructionData[currentMinigame.id]?.content : WelcomeInstructionContent;
-    const instructionTitle = currentMinigame ? instructionData[currentMinigame.id]?.title : "СООБЩЕНИЕ С ПРИВЕТОМ!";
-
-    const handleWarningContinue = () => {
-        playSound(SoundType.BUTTON_CLICK); // Initialize audio context
-        setScreen(GameScreen.PROFILE_SELECTION);
-        if (isInitialLaunch) {
-            showInstructionModal();
-        }
-    };
+    const instructionTitle = currentMinigame ? instructionData[currentMinigame.id]?.title : "Добро пожаловать в ДАДАШПИЛЬ!";
 
     const renderScreen = () => {
         switch (screen) {
             case GameScreen.WARNING:
-                return <WarningScreen onContinue={handleWarningContinue} />;
+                // Warning is now handled by TutorialOverlay, but if accessed directly:
+                return <div className="bg-black w-full h-full"></div>; 
             case GameScreen.PROFILE_SELECTION:
                 return <ProfileSelectionScreen />;
             case GameScreen.LEADERBOARD:
@@ -261,21 +341,39 @@ const App: React.FC = () => {
     };
 
     // Apply global style overrides for certain events (like April Fools) only if enabled
-    const containerStyle: React.CSSProperties = (seasonalAnimationsEnabled && seasonalEvent === SeasonalEvent.APRIL_FOOLS)
+    const containerStyle: React.CSSProperties = (seasonalAnimationsEnabled && seasonalEvent === SeasonalEvent.APRIL_FOOLS && tutorialStep === TutorialStep.NONE)
         ? { filter: 'grayscale(100%)', fontFamily: 'Arial, sans-serif' } 
         : {};
 
     return (
         <GameWrapper>
             <div style={containerStyle} className="w-full h-full relative">
-                {screen !== GameScreen.WARNING && <HUD />}
-                <SeasonalOverlay />
+                {screen !== GameScreen.WARNING && (
+                    <HUD 
+                        highlightVisor={tutorialStep === TutorialStep.VISOR}
+                        highlightControls={tutorialStep === TutorialStep.FULLSCREEN || tutorialStep === TutorialStep.CONTROLS}
+                        highlightFullscreen={tutorialStep === TutorialStep.FULLSCREEN}
+                        onVisorClick={() => {
+                            if (tutorialStep === TutorialStep.VISOR) advanceTutorial();
+                        }}
+                        onFullscreenClick={() => {
+                            if (tutorialStep === TutorialStep.FULLSCREEN) advanceTutorial();
+                        }}
+                    />
+                )}
+                
+                {/* Ensure Holiday effects don't start before onboarding is complete */}
+                {tutorialStep === TutorialStep.NONE && <SeasonalOverlay />}
                 
                 {isPaused && <PauseOverlay onResume={() => {
-                    // Force state update to remove overlay and resume logic
                     playSound(SoundType.GENERIC_CLICK); 
                     setIsPaused(false);
                 }} />}
+
+                {/* Tutorial Overlay handles the onboarding flow */}
+                {tutorialStep !== TutorialStep.NONE && (
+                    <TutorialOverlay step={tutorialStep} onNext={advanceTutorial} seasonalEvent={seasonalEvent} />
+                )}
 
                 <div key={screen} className="screen-content-wrapper">
                     {renderScreen()}
@@ -283,7 +381,7 @@ const App: React.FC = () => {
                 
                 {isGlitchWin && <GlitchWinScreen />}
 
-                {debugMode && screen !== GameScreen.DEBUG_MENU && screen !== GameScreen.DEBUG_ANIMATION_VIEWER && screen !== GameScreen.WARNING && (
+                {debugMode && screen !== GameScreen.DEBUG_MENU && screen !== GameScreen.DEBUG_ANIMATION_VIEWER && tutorialStep === TutorialStep.NONE && (
                     <button
                         onClick={() => setScreen(GameScreen.DEBUG_MENU)}
                         className="absolute bottom-4 right-4 pixel-button p-2 text-sm z-50 bg-purple-700 hover:bg-purple-800"
@@ -293,7 +391,7 @@ const App: React.FC = () => {
                     </button>
                 )}
 
-                {isInstructionModalVisible && !isLogoutConfirmationVisible && InstructionContentComponent && (
+                {isInstructionModalVisible && !isLogoutConfirmationVisible && InstructionContentComponent && tutorialStep === TutorialStep.NONE && (
                     <InstructionModal
                         title={instructionTitle}
                         onStart={() => {
@@ -304,7 +402,7 @@ const App: React.FC = () => {
                             hideInstructionModal();
                         }}
                     >
-                        <InstructionContentComponent character={character} isMinigameInverted={isMinigameInverted} />
+                        <InstructionContentComponent character={character} isMinigameInverted={isMinigameInverted} seasonalEvent={seasonalEvent} />
                     </InstructionModal>
                 )}
 
