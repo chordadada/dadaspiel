@@ -1043,30 +1043,38 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
             {status === 'canceled' && <div className="absolute inset-0 bg-purple-900/90 z-20 flex flex-col items-center justify-center text-center text-white px-4"><h2 className="text-4xl mb-4 font-bold">ВЫ ОТМЕНЕНЫ</h2><p className="text-xl">Сообщество не простило насилия над зрителем.</p></div>}
             
             <MinigameHUD>
-                <div className="flex flex-col w-full font-mono font-bold bg-black/50 p-2 border-b-2 border-red-900">
-                    <div className="flex justify-between w-full items-center">
-                        <span className="text-xl text-red-500">HP: {Math.ceil(hudState.hp)}%</span>
-                        <div className="flex flex-col items-center">
-                            <span className="text-yellow-400 text-xl">{hudState.message}</span>
-                            <div className="flex items-center gap-2 mt-1 bg-gray-800/80 px-3 py-1 rounded border border-gray-600">
-                                <span className="text-2xl">{hudState.weaponSymbol}</span>
-                                <span className="text-white text-lg tracking-wider">{hudState.weaponName}</span>
+                <div className="w-full flex flex-col gap-1 pointer-events-none">
+                    <div className="flex justify-between items-start w-full">
+                        {/* HP Section */}
+                        <div className="flex flex-col items-start bg-black/40 p-2 rounded-lg border border-red-900/50 backdrop-blur-sm shadow-lg">
+                            <span className="text-xl text-red-500 font-bold leading-none font-mono">HP {Math.ceil(hudState.hp)}%</span>
+                            <div className="w-24 h-2 bg-gray-800 mt-1 rounded overflow-hidden">
+                                <div style={{width: `${hudState.hp}%`}} className="h-full bg-red-600 transition-all duration-300"></div>
                             </div>
                         </div>
-                        {bossPhase.current && <span className="animate-pulse text-red-600 text-xl">BOSS: {Math.ceil(hudState.bossHp)}</span>}
-                    </div>
-                    
-                    {/* UnDADAstanding Meter */}
-                    <div className="w-full mt-2 h-4 bg-gray-900 border border-gray-600 relative">
-                        <div 
-                            className="h-full bg-purple-600 transition-all duration-300"
-                            style={{ width: `${Math.min(100, (hudState.undada / MAX_UNDADA) * 100)}%` }}
-                        ></div>
+
+                        {/* Center Section: Message & Meter */}
+                        <div className="flex flex-col items-center pt-2">
+                             <div className="w-32 h-2 bg-gray-900 border border-gray-600 relative mb-1 rounded-full overflow-hidden opacity-80">
+                                <div className="h-full bg-purple-600 transition-all duration-300" style={{ width: `${Math.min(100, (hudState.undada / MAX_UNDADA) * 100)}%` }}></div>
+                             </div>
+                             <span className="text-yellow-400 text-lg font-bold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] text-center whitespace-nowrap">{hudState.message}</span>
+                             {bossPhase.current && <span className="animate-pulse text-red-600 text-sm font-bold bg-black/50 px-2 rounded mt-1">BOSS: {Math.ceil(hudState.bossHp)}</span>}
+                        </div>
+
+                        {/* Weapon Section */}
+                        <div className="flex flex-col items-end bg-black/40 p-2 rounded-lg border border-gray-600/50 backdrop-blur-sm shadow-lg">
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl filter drop-shadow-md">{hudState.weaponSymbol}</span>
+                                <span className="text-white font-bold text-sm tracking-wide hidden sm:inline">{hudState.weaponName}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="flex flex-col items-center mt-2 pointer-events-none">
+                    {/* Notifications Area */}
+                    <div className="flex flex-col items-center mt-4 w-full pointer-events-none">
                         {notifications.map(n => (
-                            <div key={n.id} className={`text-lg ${n.color} animate-[fadeIn_0.2s_ease-out] drop-shadow-md`}>
+                            <div key={n.id} className={`text-lg font-bold ${n.color} animate-[fadeIn_0.2s_ease-out] drop-shadow-md bg-black/30 px-2 rounded mb-1`}>
                                 {n.text}
                             </div>
                         ))}
