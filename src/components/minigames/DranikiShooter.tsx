@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSession, useSettings, useNavigation } from '../../context/GameContext';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { SoundType, MusicType, startMusic, stopMusic } from '../../utils/AudioEngine';
@@ -13,6 +13,10 @@ const INTERNAL_HEIGHT = 200; // Fixed vertical resolution for pixelated look
 const MAP_SIZE = 24; 
 const MAX_DEPTH = 24;
 const MAX_UNDADA = 100;
+
+// Emoji Pools
+const PRISTAVUCHIY_VARIANTS = ['🤷‍♂️', '🤷‍♀️', '🤷', '🧟‍♀️', '🧟', '🧟‍♂️'];
+const VISITOR_VARIANTS = ['🧐', '🤔', '🙄', '😲', '😐', '🤨', '🤠'];
 
 // Weapon Definitions
 type WeaponType = 'spoon' | 'fork' | 'knife' | 'ladle';
@@ -47,6 +51,7 @@ interface Entity {
     hp: number;
     state: 'idle' | 'chase' | 'attack' | 'pain' | 'invisible';
     stateTimer: number;
+    visualVariant?: string; // Stores the specific emoji chosen at spawn
 }
 
 interface Player {
@@ -87,6 +92,21 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
     const { character } = useSession();
     const isMobile = useIsMobile();
     
+    // --- Random Motivational Start Message ---
+    const startMessage = useMemo(() => {
+        const msgs = [
+            "ГОТОВЬ ТЁРКУ!",
+            "ПЕРЕТРИ В КРАХМАЛ!",
+            "СВЯТОЙ КЛУБЕНЬ!",
+            "ОТЖАРЬ ИХ ВСЕХ!",
+            "БУЛЬБА ЗОВЁТ!",
+            "СТЕРТЬ КАРТОШКЕ!",
+            "ВРЕМЯ ТЕРЕТЬ!",
+            "ВКЛЮЧАЙ ПЛИТУ!"
+        ];
+        return msgs[Math.floor(Math.random() * msgs.length)];
+    }, []);
+
     // --- Refs for Game Loop ---
     const wrapperRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -323,12 +343,17 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
             
             if (attempts < 100) {
                 const isPristavuchiy = Math.random() < 0.3; 
+                // Select specific emoji variant
+                const variants = isPristavuchiy ? PRISTAVUCHIY_VARIANTS : VISITOR_VARIANTS;
+                const chosenEmoji = variants[Math.floor(Math.random() * variants.length)];
+
                 newEnts.push({
                     id: Date.now() + 1000 + i,
                     type: isPristavuchiy ? 'pristavuchiy' : 'visitor',
                     x: vx, y: vy,
                     active: true, hp: 10, 
-                    state: 'idle', stateTimer: Math.random() * 5
+                    state: 'idle', stateTimer: Math.random() * 5,
+                    visualVariant: chosenEmoji
                 });
             }
         }
@@ -924,8 +949,11 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
                 if (sprite.type === 'boss') emoji = '👺';
                 if (sprite.type === 'kanila_boss') emoji = '🧢';
                 if (sprite.type === 'sexism_boss') emoji = '👚';
-                if (sprite.type === 'visitor') emoji = '🧐'; 
-                if (sprite.type === 'pristavuchiy') emoji = '🧟‍♂️'; 
+                
+                // Varied emojis for visitors and pristavuchiy
+                if (sprite.type === 'visitor') emoji = sprite.visualVariant || '🧐';
+                if (sprite.type === 'pristavuchiy') emoji = sprite.visualVariant || '🧟‍♂️'; 
+                
                 if (['sour_cream', 'machanka', 'shkvarki'].includes(sprite.type)) emoji = '🥘';
                 if (['heavy_thoughts', 'chronos_soup', 'inverted_gaze', 'blind_faith'].includes(sprite.type)) emoji = '🔮';
                 
@@ -1010,10 +1038,13 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
             ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             ctx.fillRect(0, h/2 - 40, w, 80);
             ctx.fillStyle = 'white';
-            ctx.font = '20px monospace';
+            ctx.font = 'bold 20px monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(Math.floor(Date.now() / 500) % 2 === 0 ? "СДЕЛАЙ ШАГ" : "", w/2, h/2);
+            // Blink effect for the start message
+            if (Math.floor(Date.now() / 500) % 2 === 0) {
+                ctx.fillText(startMessage, w/2, h/2);
+            }
         }
     };
 
