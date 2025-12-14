@@ -108,7 +108,7 @@ export const StartScreen: React.FC = () => {
                           type="text" 
                           value={playerName}
                           onChange={(e) => setPlayerName(e.target.value)}
-                          placeholder="ИМЯ..."
+                          placeholder="ИМЯ БИОСУЩЕСТВА..."
                           maxLength={14}
                           className="bg-black/60 text-white p-2 text-center border-b-2 border-gray-500 w-full text-m md:text-lg focus:outline-none focus:border-yellow-400 placeholder-gray-500 transition-colors uppercase font-bold"
                         />
@@ -155,13 +155,12 @@ export const StartScreen: React.FC = () => {
                         {isLocked ? (
                             <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-4">
                                 <span className="text-5xl">🚫</span>
-                                <p className="text-m md:text-base font-bold">БИОВИД НЕДОСТУПЕН</p>
+                                <p className="text-m md:text-base font-bold">ВЫБОР НЕДОСТУПЕН</p>
                                 <p className="text-sm md:text-m opacity-70">Завершите симуляцию за Канилу или Сексизма для разблокировки.</p>
                             </div>
                         ) : (
                             <>
                                 <div className="border-b border-gray-600 pb-2">
-                                    <span className="text-s md:text-s text-yellow-500 font-bold uppercase tracking-widest text-shadow-sm">БИОСУЩЕСТВО</span>
                                     <p className="text-s md:text-lg text-white font-bold leading-tight shadow-black drop-shadow-md">
                                         {currentCharData.description}
                                     </p>
