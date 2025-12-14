@@ -104,7 +104,6 @@ export const StartScreen: React.FC = () => {
                     
                     {/* Input Group */}
                     <div className="w-full flex flex-col items-center gap-2 shrink-0">
-                        <span className="text-m md:text-m text-yellow-500 font-bold uppercase tracking-widest text-shadow-sm">БИОСУЩЕСТВО</span>
                         <input 
                           type="text" 
                           value={playerName}
@@ -144,7 +143,7 @@ export const StartScreen: React.FC = () => {
 
                     {/* Character Name Label */}
                     <div className="bg-black/60 px-1 py-2 rounded border border-gray-600 w-full text-center mt-auto shrink-0">
-                        <h3 className="text-lg md:text-xl font-black text-yellow-300 leading-none break-words tracking-tight">
+                        <h3 className="text-l md:text-xl font-black text-yellow-300 leading-none break-words tracking-tight">
                             {currentCharData.name}
                         </h3>
                     </div>
@@ -152,7 +151,7 @@ export const StartScreen: React.FC = () => {
 
                 {/* RIGHT PANEL: Info (Description) */}
                 <div className="flex flex-col flex-1 bg-black/60 pixel-border backdrop-blur-md overflow-hidden relative min-w-0">
-                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-3 md:p-6 space-y-3 md:space-y-4">
+                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-2 md:p-6 space-y-3 md:space-y-4">
                         {isLocked ? (
                             <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-4">
                                 <span className="text-5xl">🚫</span>
@@ -162,8 +161,8 @@ export const StartScreen: React.FC = () => {
                         ) : (
                             <>
                                 <div className="border-b border-gray-600 pb-2">
-                                    <span className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wider block mb-1">АРХЕТИП</span>
-                                    <p className="text-l md:text-lg text-white font-bold leading-tight shadow-black drop-shadow-md">
+                                    <span className="text-s md:text-s text-yellow-500 font-bold uppercase tracking-widest text-shadow-sm">БИОСУЩЕСТВО</span>
+                                    <p className="text-m md:text-lg text-white font-bold leading-tight shadow-black drop-shadow-md">
                                         {currentCharData.description}
                                     </p>
                                 </div>
