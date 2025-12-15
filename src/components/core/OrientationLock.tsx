@@ -1,7 +1,14 @@
 
 import React from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export const OrientationLock: React.FC = () => {
+    const { isIOS } = useIsMobile();
+
+    // На iOS мы не требуем поворота, так как Fullscreen API там работает плохо,
+    // и мы адаптируем игру под 1:1 в портрете.
+    if (isIOS) return null;
+
     return (
         <>
             <style>{`

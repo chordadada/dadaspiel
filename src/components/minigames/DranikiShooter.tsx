@@ -149,7 +149,16 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
     const [status, setStatus] = useState<'initializing' | 'waiting' | 'playing' | 'won' | 'lost' | 'canceled'>('initializing');
     const [notifications, setNotifications] = useState<GameNotification[]>([]);
     const [canvasSize, setCanvasSize] = useState({ width: 320, height: INTERNAL_HEIGHT });
+    const [showSensitivityHint, setShowSensitivityHint] = useState(false);
     const notifIdCounter = useRef(0);
+
+    // --- Check for Sensitivity Hint (Only on first run) ---
+    useEffect(() => {
+        const hasSeenHint = localStorage.getItem('dada_shooter_sensitivity_hint');
+        if (!hasSeenHint) {
+            setShowSensitivityHint(true);
+        }
+    }, []);
 
     // --- Dynamic Resolution ---
     useEffect(() => {
@@ -470,6 +479,10 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
         if (!hasGameStarted.current) {
             if (turnLeft || turnRight || moveFwd || moveBack || isFiring) {
                 hasGameStarted.current = true;
+                // Mark sensitivity hint as seen
+                localStorage.setItem('dada_shooter_sensitivity_hint', 'true');
+                setShowSensitivityHint(false);
+                
                 setStatus('playing');
                 currentRound.current = 1;
                 spawnWave(1);
@@ -1033,19 +1046,6 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
             ctx.fillStyle = `rgba(0, 0, 0, ${blindFold.current})`;
             ctx.fillRect(0, 0, w, h);
         }
-
-        if (!hasGameStarted.current && !isInstructionModalVisible) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(0, h/2 - 40, w, 80);
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 20px monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            // Blink effect for the start message
-            if (Math.floor(Date.now() / 500) % 2 === 0) {
-                ctx.fillText(startMessage, w/2, h/2);
-            }
-        }
     };
 
     useGameLoop((dt) => {
@@ -1126,6 +1126,28 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
                 className="w-full h-full absolute inset-0 z-10 pixelated-canvas"
                 style={{ imageRendering: 'pixelated', backgroundColor: 'transparent' }} 
             />
+            
+            {/* Start & Hints Overlay */}
+            {!hasGameStarted.current && !isInstructionModalVisible && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/50">
+                    <div className="text-white font-bold font-mono text-2xl md:text-4xl animate-pulse text-center px-4" style={{textShadow: '2px 2px 0 #000'}}>
+                        {startMessage}
+                    </div>
+                    <div className="text-gray-300 mt-4 font-mono text-sm md:text-base bg-black/70 p-2 rounded">
+                        {isMobile ? "ИСПОЛЬЗУЙ ДЖОЙСТИК" : "W, A, S, D + SPACE"}
+                    </div>
+                    
+                    {/* Sensitivity Hint - SHOWS ONLY IF NOT SEEN BEFORE */}
+                    {showSensitivityHint && (
+                        <div className="absolute top-20 left-4 z-50 flex flex-col items-start animate-bounce pointer-events-none">
+                            <div className="text-4xl mb-1 text-yellow-300">⬆️</div>
+                            <div className="bg-black/80 p-2 rounded border border-yellow-400 text-yellow-300 font-bold text-xs max-w-[200px] text-center shadow-lg">
+                                ЧУВСТВИТЕЛЬНОСТЬ
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
             
             {/* Mobile Controls Overlay - Uses useIsMobile hook */}
             {isMobile && (

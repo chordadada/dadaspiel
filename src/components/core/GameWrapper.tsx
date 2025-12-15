@@ -2,9 +2,11 @@
 import React, { ReactNode, useEffect, useRef } from 'react';
 import { useSession } from '../../context/GameContext';
 import { OrientationLock } from './OrientationLock';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export const GameWrapper: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentCase } = useSession();
+  const { isIOS } = useIsMobile();
   const isGameScreen = !!currentCase;
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -46,13 +48,28 @@ export const GameWrapper: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []); // Empty dependency array ensures this runs only once on mount.
 
+  // Determine sizing classes based on device and screen type
+  let sizingClass = '';
+  
+  if (isIOS) {
+      // Force square on iOS everywhere to handle portrait mode gracefully
+      sizingClass = 'aspect-square max-w-[100vw] max-h-[100vw]';
+  } else {
+      if (isGameScreen) {
+          // Force 4:3 for gameplay on non-iOS
+          sizingClass = 'aspect-[4/3] max-w-[1024px] max-h-[768px]';
+      } else {
+          // Flexible for menus on non-iOS, but capped on desktop
+          sizingClass = 'sm:max-w-[1024px] sm:max-h-[768px]';
+      }
+  }
 
   return (
     <div className="w-full h-full bg-black flex items-center justify-center p-0 sm:p-4">
       <div 
         ref={containerRef}
         id="game-container"
-        className={`w-full h-full bg-[#1a1a1a] pixel-border flex flex-col relative overflow-hidden transition-all duration-300 ${isGameScreen ? 'aspect-[4/3] max-w-[1024px] max-h-[768px]' : 'sm:max-w-[1024px] sm:max-h-[768px]'}`}
+        className={`w-full h-full bg-[#1a1a1a] pixel-border flex flex-col relative overflow-hidden transition-all duration-300 ${sizingClass}`}
       >
         <div id="game-content-container" className="w-full h-full">
             {children}

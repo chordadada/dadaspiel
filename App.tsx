@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { GameScreen, Character, SeasonalEvent } from './types';
 import { GameProvider, useNavigation, useSession, useProfile, useSettings } from './src/context/GameContext';
 import { MusicType, SoundType, startMusic, stopMusic, preloadMusic } from './src/utils/AudioEngine';
+import { useIsMobile } from './src/hooks/useIsMobile';
 
 import { GameWrapper } from './src/components/core/GameWrapper';
 import { HUD } from './src/components/core/HUD';
@@ -64,7 +65,8 @@ enum TutorialStep {
     FULLSCREEN = 2,
     CONTROLS = 3,
     WARNING = 4,
-    FINAL_TIP = 5
+    IOS_NOTE = 5, // New step for iPhone users
+    FINAL_TIP = 6
 }
 
 // Simple Pause Overlay
@@ -79,28 +81,33 @@ const PauseOverlay: React.FC<{ onResume: () => void }> = ({ onResume }) => (
 );
 
 // Component for the content of the initial welcome/general instructions modal.
-const WelcomeInstructionContent: React.FC<{ character?: Character | null; isMinigameInverted?: boolean; seasonalEvent?: SeasonalEvent }> = ({ seasonalEvent }) => (
-    <>
-        <p className="mt-4">ЭТО ФАНТАЗМ, состоящий из серии сюрреалистических снов.</p>
-        <p className="mt-4 text-yellow-300"><strong>Управление:</strong></p>
-        <ul className="list-disc list-inside space-y-2 mt-2">
-            <li><strong>Визор:</strong> Нажмите на три точки (•••) вверху экрана, чтобы закрепить/открепить интерфейс. На десктопе он также появляется при наведении.</li>
-            <li><strong>Интерфейс:</strong> В левой части визора находятся кнопки управления:
-                <ul className="list-disc list-inside ml-4">
-                    <li><span className="text-2xl">🔊/🔇</span> - Включить/выключить звук.</li>
-                    <li><span className="text-2xl">↗️/↙️</span> - Войти/выйти из полноэкранного режима.</li>
-                    <li><span className="text-2xl">ℹ️</span> - Показать это окно или правила текущего сна.</li>
-                    <li><span className="text-2xl">🚪</span> - Выйти в меню выбора профиля.</li>
-                    {seasonalEvent && seasonalEvent !== SeasonalEvent.NONE && (
-                        <li><span className="text-2xl">🎉</span> - Вкл/Выкл праздничное оформление.</li>
-                    )}
-                </ul>
-            </li>
-            <li><strong>Чувствительность:</strong> Ползунок в визоре регулирует скорость вращения в 3D-играх.</li>
-        </ul>
-        <p className="mt-4"><strong>СОВЕТ:</strong> Внимательно читайте правила перед каждой игрой.</p>
-    </>
-);
+const WelcomeInstructionContent: React.FC<{ character?: Character | null; isMinigameInverted?: boolean; seasonalEvent?: SeasonalEvent }> = ({ seasonalEvent }) => {
+    const { isIOS } = useIsMobile();
+    
+    return (
+        <>
+            <p className="mt-4">ЭТО ФАНТАЗМ, состоящий из серии сюрреалистических снов.</p>
+            <p className="mt-4 text-yellow-300"><strong>Управление:</strong></p>
+            <ul className="list-disc list-inside space-y-2 mt-2">
+                <li><strong>Визор:</strong> Нажмите на три точки (•••) вверху экрана, чтобы закрепить/открепить интерфейс. На десктопе он также появляется при наведении.</li>
+                <li><strong>Интерфейс:</strong> В левой части визора находятся кнопки управления:
+                    <ul className="list-disc list-inside ml-4">
+                        <li><span className="text-2xl">🔊/🔇</span> - Включить/выключить звук.</li>
+                        {!isIOS && (
+                            <li><span className="text-2xl">↗️/↙️</span> - Войти/выйти из полноэкранного режима.</li>
+                        )}
+                        <li><span className="text-2xl">ℹ️</span> - Показать это окно или правила текущего сна.</li>
+                        <li><span className="text-2xl">🚪</span> - Выйти в меню выбора профиля.</li>
+                        {seasonalEvent && seasonalEvent !== SeasonalEvent.NONE && (
+                            <li><span className="text-2xl">🎉</span> - Вкл/Выкл праздничное оформление.</li>
+                        )}
+                    </ul>
+                </li>
+            </ul>
+            <p className="mt-4"><strong>СОВЕТ:</strong> Внимательно читайте правила перед каждой игрой.</p>
+        </>
+    );
+};
 
 // Component for the Tutorial Overlay
 const TutorialOverlay: React.FC<{ step: TutorialStep; onNext: () => void; seasonalEvent: SeasonalEvent }> = ({ step, onNext, seasonalEvent }) => {
@@ -123,14 +130,13 @@ const TutorialOverlay: React.FC<{ step: TutorialStep; onNext: () => void; season
                     <div className="absolute top-14 left-1/2 -translate-x-1/2 text-6xl animate-bounce text-yellow-300">⬆️</div>
                     <div className="mt-20 bg-black/80 p-6 pixel-border max-w-md">
                         <h3 className="text-2xl text-yellow-300 mb-2">ЭТО ВИЗОР</h3>
-                        <p className="text-xl">Нажми на три точки сверху, чтобы открыть меню игры.</p>
+                        <p className="text-xl">Нажми на три точки сверху, чтобы показать/скрыть меню игры.</p>
                     </div>
                 </>
             )}
 
             {step === TutorialStep.FULLSCREEN && (
                 <>
-                    <div className="absolute top-16 left-28 text-6xl animate-bounce text-yellow-300 transform -rotate-45">⬆️</div>
                     <div className="mt-20 bg-black/80 p-6 pixel-border max-w-md">
                         <h3 className="text-2xl text-yellow-300 mb-2">ПОГРУЖЕНИЕ</h3>
                         <p className="text-xl">Нажми кнопку ↗️, чтобы развернуть игру на весь экран.</p>
@@ -148,7 +154,6 @@ const TutorialOverlay: React.FC<{ step: TutorialStep; onNext: () => void; season
                         {seasonalEvent !== SeasonalEvent.NONE && (
                             <p><span className="text-2xl">🎉</span> — Вкл/Выкл праздничное оформление.</p>
                         )}
-                        <p><strong>Чувствительность:</strong> Ползунок для настройки скорости в 3D играх.</p>
                     </div>
                     <button onClick={onNext} className="pixel-button p-3 text-xl mt-8 w-full bg-blue-700">
                         ДАЛЬШЕ
@@ -172,6 +177,21 @@ const TutorialOverlay: React.FC<{ step: TutorialStep; onNext: () => void; season
                     ) : (
                         <p className="text-sm text-gray-400 animate-pulse">Загрузка реальности...</p>
                     )}
+                </div>
+            )}
+
+            {step === TutorialStep.IOS_NOTE && (
+                <div className="bg-slate-800 p-8 pixel-border max-w-lg border-blue-400">
+                    <h3 className="text-3xl text-yellow-300 mb-4">APPLE? СОБОЛЕЗНУЕМ.</h3>
+                    <p className="text-xl mb-4">
+                        К сожалению, iPhone не дружит с полноэкранным режимом в браузере.
+                    </p>
+                    <p className="text-lg text-gray-300 mb-6">
+                        Мы адаптировали игру под квадратный формат, чтобы вам не пришлось вращать телефон, но для полного Дада-Экстаза рекомендуем <strong>Android</strong> или <strong>ПК</strong>.
+                    </p>
+                    <button onClick={onNext} className="pixel-button p-3 text-xl w-full bg-blue-600 hover:bg-blue-500">
+                        ПРИНЯТЬ СУДЬБУ
+                    </button>
                 </div>
             )}
 
@@ -199,6 +219,7 @@ const App: React.FC = () => {
     } = useSession();
     const { profileToDeleteId, profiles, confirmDeleteProfile, cancelDeleteProfile, isLogoutConfirmationVisible, confirmLogout, cancelLogout } = useProfile();
     const { debugMode, playSound, seasonalEvent, seasonalAnimationsEnabled, isPaused, setIsPaused } = useSettings();
+    const { isIOS } = useIsMobile();
     const [isInitialLaunch, setIsInitialLaunch] = useState(false);
     
     // Tutorial State
@@ -229,15 +250,32 @@ const App: React.FC = () => {
 
     const advanceTutorial = () => {
         playSound(SoundType.BUTTON_CLICK);
-        if (tutorialStep === TutorialStep.VISOR) setTutorialStep(TutorialStep.FULLSCREEN);
+        if (tutorialStep === TutorialStep.VISOR) {
+            // Check full screen support to decide if we should skip the FULLSCREEN step
+            // On iOS, fullscreen API is practically non-existent for web apps in browser, so skip it.
+            const doc = document as any;
+            const isFullscreenSupported = !!(doc.fullscreenEnabled || doc.webkitFullscreenEnabled || doc.mozFullScreenEnabled || doc.msFullscreenEnabled);
+            
+            if (isIOS) {
+                setTutorialStep(TutorialStep.CONTROLS); // Skip fullscreen on iOS
+            } else {
+                setTutorialStep(isFullscreenSupported ? TutorialStep.FULLSCREEN : TutorialStep.CONTROLS);
+            }
+        }
         else if (tutorialStep === TutorialStep.FULLSCREEN) setTutorialStep(TutorialStep.CONTROLS);
         else if (tutorialStep === TutorialStep.CONTROLS) setTutorialStep(TutorialStep.WARNING);
-        else if (tutorialStep === TutorialStep.WARNING) setTutorialStep(TutorialStep.FINAL_TIP);
+        else if (tutorialStep === TutorialStep.WARNING) {
+            // If iOS, show the special note, otherwise go to final tip
+            if (isIOS) {
+                setTutorialStep(TutorialStep.IOS_NOTE);
+            } else {
+                setTutorialStep(TutorialStep.FINAL_TIP);
+            }
+        }
+        else if (tutorialStep === TutorialStep.IOS_NOTE) setTutorialStep(TutorialStep.FINAL_TIP);
         else if (tutorialStep === TutorialStep.FINAL_TIP) {
             setTutorialStep(TutorialStep.NONE);
             localStorage.setItem('dada-spiel-tutorial-complete', 'true');
-            // If it's a fresh install, we might want to show the Welcome modal too, or consider the tutorial enough.
-            // Let's assume the tutorial covers the basics, but specific game rules are in 'ℹ️'.
         }
     };
 

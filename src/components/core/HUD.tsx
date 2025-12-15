@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSession, useSettings, useProfile, useNavigation } from '../../context/GameContext';
 import { playSound, SoundType } from '../../utils/AudioEngine';
 import { Character, GameScreen, SeasonalEvent } from '../../../types';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface HUDProps {
     highlightVisor?: boolean;
@@ -21,13 +22,16 @@ export const HUD: React.FC<HUDProps> = ({
 }) => {
   const { 
     lives, sessionScore, character, activateArtistInsight, activateFourthWall,
-    abilityUsedInCase, abilityUsedInSession, absurdEdgeUsedInSession, activateAbsurdEdge
+    abilityUsedInCase, abilityUsedInSession, absurdEdgeUsedInSession, activateAbsurdEdge,
+    currentCase, minigameIndex
   } = useSession();
   const { isMuted, toggleMute, seasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, sensitivity, setSensitivity } = useSettings();
   const { activeProfile, requestLogout } = useProfile();
   const { screen, showInstructionModal } = useNavigation();
+  const { isIOS } = useIsMobile();
 
-  const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreenSupported, setIsFullscreenSupported] = useState(false);
   
   // States for HUD visibility
   const [isSticky, setIsSticky] = useState(false); // For permanent visibility toggle
@@ -37,9 +41,26 @@ export const HUD: React.FC<HUDProps> = ({
   const isHudVisible = isSticky || isHovering || highlightControls;
   const isTutorialMode = highlightVisor || highlightControls || highlightFullscreen;
 
+  // Check if we should show sensitivity slider (Only for Draniki Shooter 6-3)
+  const isShooterGame = screen === GameScreen.MINIGAME_PLAY && currentCase?.minigames[minigameIndex]?.id === '6-3';
+
   // Refs for interaction logic
   const hideTimerRef = useRef<number | null>(null);
   const lastTapRef = useRef(0);
+
+  // --- Check Fullscreen Support on Mount ---
+  useEffect(() => {
+      // Check standard and vendor-prefixed properties
+      const doc = document as any;
+      const supported = !!(
+          doc.fullscreenEnabled || 
+          doc.webkitFullscreenEnabled || 
+          doc.mozFullScreenEnabled || 
+          doc.msFullscreenEnabled
+      );
+      setIsFullscreenSupported(supported);
+      setIsFullscreen(!!doc.fullscreenElement || !!doc.webkitFullscreenElement || !!doc.mozFullScreenElement || !!doc.msFullscreenElement);
+  }, []);
 
   // --- Event Handlers for Visor Interaction ---
 
@@ -102,22 +123,38 @@ export const HUD: React.FC<HUDProps> = ({
     playSound(SoundType.BUTTON_CLICK);
     if (onFullscreenClick) onFullscreenClick();
     
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        // alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-        console.warn("Fullscreen failed", err);
-      });
+    const doc = document as any;
+    if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.mozFullScreenElement && !doc.msFullscreenElement) {
+      const elem = document.documentElement as any;
+      const request = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
+      if (request) {
+          request.call(elem).catch((err: any) => {
+            console.warn("Fullscreen failed", err);
+          });
+      }
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
+      const exit = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+      if (exit) {
+        exit.call(doc);
       }
     }
   };
 
   useEffect(() => {
-    const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const onFullscreenChange = () => {
+        const doc = document as any;
+        setIsFullscreen(!!doc.fullscreenElement || !!doc.webkitFullscreenElement || !!doc.mozFullScreenElement || !!doc.msFullscreenElement);
+    };
     document.addEventListener('fullscreenchange', onFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+    document.addEventListener('mozfullscreenchange', onFullscreenChange);
+    document.addEventListener('MSFullscreenChange', onFullscreenChange);
+    return () => {
+        document.removeEventListener('fullscreenchange', onFullscreenChange);
+        document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+        document.removeEventListener('mozfullscreenchange', onFullscreenChange);
+        document.removeEventListener('MSFullscreenChange', onFullscreenChange);
+    };
   }, []);
 
   return (
@@ -152,7 +189,9 @@ export const HUD: React.FC<HUDProps> = ({
         )}
         <div className="flex flex-wrap items-center gap-2">
             <button onClick={handleToggleMute} className="pixel-button text-2xl !p-2" aria-label={isMuted ? "Включить звук" : "Выключить звук"} style={{textShadow: 'none'}}>{isMuted ? '🔇' : '🔊'}</button>
-            <button onClick={handleToggleFullscreen} className={`pixel-button text-2xl !p-2 ${highlightFullscreen ? 'animate-bounce border-yellow-300' : ''}`} aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Войти в полноэкранный режим"} style={{textShadow: 'none'}}>{isFullscreen ? '↙️' : '↗️'}</button>
+            {!isIOS && isFullscreenSupported && (
+                <button onClick={handleToggleFullscreen} className={`pixel-button text-2xl !p-2 ${highlightFullscreen ? 'animate-bounce border-yellow-300' : ''}`} aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Войти в полноэкранный режим"} style={{textShadow: 'none'}}>{isFullscreen ? '↙️' : '↗️'}</button>
+            )}
             <button onClick={() => showInstructionModal()} className="pixel-button text-2xl !p-2" aria-label="Показать информацию" style={{textShadow: 'none'}}>ℹ️</button>
             {/* Seasonal Toggle Button - Only visible during holidays */}
             {seasonalEvent !== SeasonalEvent.NONE && (
@@ -168,19 +207,21 @@ export const HUD: React.FC<HUDProps> = ({
             {activeProfile && <button onClick={() => requestLogout()} className="pixel-button text-2xl !p-2 bg-red-800" aria-label="Выйти в главное меню" style={{textShadow: 'none'}}>🚪</button>}
         </div>
         
-        {/* Sensitivity Slider */}
-        <div className="flex flex-col w-full mt-2 border-t border-gray-600 pt-2">
-            <label className="text-xs text-gray-400 mb-1">ЧУВСТВИТЕЛЬНОСТЬ</label>
-            <input 
-                type="range" 
-                min="0.5" 
-                max="2.5" 
-                step="0.1" 
-                value={sensitivity} 
-                onChange={(e) => setSensitivity(parseFloat(e.target.value))}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-400"
-            />
-        </div>
+        {/* Sensitivity Slider - Only visible in Shooter Minigame */}
+        {isShooterGame && (
+            <div className="flex flex-col w-full mt-2 border-t border-gray-600 pt-2 animate-[fadeIn_0.5s]">
+                <label className="text-xs text-gray-400 mb-1">ЧУВСТВИТЕЛЬНОСТЬ</label>
+                <input 
+                    type="range" 
+                    min="0.5" 
+                    max="2.5" 
+                    step="0.1" 
+                    value={sensitivity} 
+                    onChange={(e) => setSensitivity(parseFloat(e.target.value))}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-400"
+                />
+            </div>
+        )}
       </div>
       
       {/* Visor Toggle Button */}
