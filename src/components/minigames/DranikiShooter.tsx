@@ -1138,12 +1138,15 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
             
             {/* Start Overlay - Only show if tutorial is DONE and instructions are closed */}
             {!hasGameStarted.current && !isInstructionModalVisible && (
-                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/50">
-                    <div className="text-white font-bold font-mono text-2xl md:text-4xl animate-pulse text-center px-4" style={{textShadow: '2px 2px 0 #000'}}>
-                        {startMessage}
-                    </div>
-                    <div className="text-gray-300 mt-4 font-mono text-sm md:text-base bg-black/70 p-2 rounded">
-                        {isMobile ? "ИСПОЛЬЗУЙ ДЖОЙСТИК" : "W, A, S, D + SPACE"}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center justify-center pointer-events-none w-full max-w-md px-4">
+                    <div className="bg-black/70 p-6 rounded-xl border-4 border-yellow-500/50 backdrop-blur-sm flex flex-col items-center gap-4 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                        <div className="text-yellow-400 font-bold font-mono text-2xl md:text-4xl animate-pulse text-center leading-tight" style={{textShadow: '2px 2px 0 #000'}}>
+                            {startMessage}
+                        </div>
+                        <div className="text-white font-mono text-sm md:text-base bg-black/80 px-4 py-2 rounded border border-gray-500 flex items-center gap-2">
+                            <span className="text-xl">🎮</span>
+                            <span>{isMobile ? "ТРОНЬ ДЖОЙСТИК!" : "ЖМИ W, A, S, D + SPACE"}</span>
+                        </div>
                     </div>
                 </div>
             )}
