@@ -15,6 +15,7 @@ interface InstructionProps {
     isMinigameInverted?: boolean;
     currentRound?: any; // A bit generic, but should work for FruktoviySpor
     round?: number;
+    isSensitivityTutorialActive?: boolean;
 }
 
 type InstructionComponent = React.FC<InstructionProps>;
@@ -227,8 +228,18 @@ export const instructionData: { [key: string]: { title: string; content: Instruc
     },
     '6-3': {
         title: "ПОЛНЫЙ АДАДИЗМ",
-        content: () => (
+        content: ({ isSensitivityTutorialActive }) => (
             <>
+                {isSensitivityTutorialActive && (
+                    <div className="mb-4 p-2 border-2 border-yellow-400 bg-yellow-900/50 rounded animate-pulse">
+                        <p className="text-yellow-300 font-bold text-center text-sm md:text-base">
+                            НАСТРОЙТЕ ЧУВСТВИТЕЛЬНОСТЬ ВИЗОРА СЛЕВА!
+                        </p>
+                        <p className="text-xs text-center text-gray-300 mt-1">
+                            (Если камера вращается слишком быстро или медленно)
+                        </p>
+                    </div>
+                )}
                 <p>Это шутер от первого лица.</p>
                 <p><strong>Управление:</strong></p>
                 <p><strong>ПК:</strong><br/>

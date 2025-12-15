@@ -101,7 +101,7 @@ export const GlitchWinScreen: React.FC = () => {
                         </button>
                     )}
                     <button onClick={handleContinue} className="pixel-button p-3 text-xl bg-gray-600 hover:bg-gray-700">
-                        ПРОДОЛ-ЖИТЬ
+                        БЛАГОДАРСТВУЮ
                     </button>
                 </div>
             </div>

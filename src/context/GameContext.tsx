@@ -38,6 +38,8 @@ interface SettingsContextType {
     seasonalMessage: string | null;
     sensitivity: number;
     setSensitivity: (val: number) => void;
+    sensitivityTutorial: boolean;
+    setSensitivityTutorial: (active: boolean) => void;
     isPaused: boolean;
     setIsPaused: (paused: boolean) => void;
 }
@@ -216,6 +218,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [seasonalAnimationsEnabled, setSeasonalAnimationsEnabled] = useState(true);
     const [seasonalMessage, setSeasonalMessage] = useState<string | null>(null);
     const [sensitivity, setSensitivity] = useState(1.0);
+    const [sensitivityTutorial, setSensitivityTutorial] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
 
     // --- Modal States ---
@@ -541,7 +544,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // --- Memoized Context Values ---
     const navigationContextValue = useMemo(() => ({ screen, setScreen, animationToView, setAnimationToView, jumpToMinigame, isInstructionModalVisible: isUIPaused, showInstructionModal: () => setIsInstructionModalOpen(true), hideInstructionModal: () => setIsInstructionModalOpen(false) }), [screen, animationToView, isUIPaused, setScreen, jumpToMinigame]);
-    const settingsContextValue = useMemo(() => ({ debugMode, toggleDebug: () => setDebugMode(d => !d), isLogging, toggleLogging: () => setIsLogging(l => !l), setIsLogging, log, logEvent, isMuted, toggleMute, playSound, debugCharacter, setDebugCharacter, seasonalEvent, setSeasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, seasonalMessage, sensitivity, setSensitivity, isPaused, setIsPaused }), [debugMode, isLogging, log, isMuted, debugCharacter, logEvent, playSound, toggleMute, seasonalEvent, setSeasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, seasonalMessage, sensitivity, isPaused]);
+    const settingsContextValue = useMemo(() => ({ debugMode, toggleDebug: () => setDebugMode(d => !d), isLogging, toggleLogging: () => setIsLogging(l => !l), setIsLogging, log, logEvent, isMuted, toggleMute, playSound, debugCharacter, setDebugCharacter, seasonalEvent, setSeasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, seasonalMessage, sensitivity, setSensitivity, sensitivityTutorial, setSensitivityTutorial, isPaused, setIsPaused }), [debugMode, isLogging, log, isMuted, debugCharacter, logEvent, playSound, toggleMute, seasonalEvent, setSeasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, seasonalMessage, sensitivity, sensitivityTutorial, isPaused]);
     const profileContextValue = useMemo(() => ({ profiles, activeProfile, profileToDeleteId, createProfile, selectProfile, deleteProfile, confirmDeleteProfile, cancelDeleteProfile, requestLogout, dynamicCases, isLogoutConfirmationVisible, confirmLogout, cancelLogout, unlockAllLevels }), [profiles, activeProfile, profileToDeleteId, createProfile, selectProfile, deleteProfile, confirmDeleteProfile, cancelDeleteProfile, requestLogout, dynamicCases, isLogoutConfirmationVisible, confirmLogout, cancelLogout, unlockAllLevels]);
     const sessionContextValue = useMemo(() => ({ character, currentCase, minigameIndex, lives, sessionScore, isSlowMo, isMinigameInverted, abilityUsedInCase, abilityUsedInSession, forcedOutro, absurdEdgeUsedInSession, isAbsurdEdgeBonusRound, isGlitchWin, glitchWinVideoUrl, startCase, winMinigame, loseMinigame, killPlayer, addLife: (amount = 1) => setLives(l => l + amount), addScore: (points) => setSessionScore(s => s + points), activateArtistInsight, activateFourthWall, handleMistake, activateAbsurdEdge, proceedAfterGlitchWin }), [character, currentCase, minigameIndex, lives, sessionScore, isSlowMo, isMinigameInverted, abilityUsedInCase, abilityUsedInSession, forcedOutro, absurdEdgeUsedInSession, isAbsurdEdgeBonusRound, isGlitchWin, glitchWinVideoUrl, startCase, winMinigame, loseMinigame, killPlayer, activateArtistInsight, activateFourthWall, handleMistake, activateAbsurdEdge, proceedAfterGlitchWin]);
 

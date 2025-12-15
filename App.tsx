@@ -218,7 +218,7 @@ const App: React.FC = () => {
         isGlitchWin
     } = useSession();
     const { profileToDeleteId, profiles, confirmDeleteProfile, cancelDeleteProfile, isLogoutConfirmationVisible, confirmLogout, cancelLogout } = useProfile();
-    const { debugMode, playSound, seasonalEvent, seasonalAnimationsEnabled, isPaused, setIsPaused } = useSettings();
+    const { debugMode, playSound, seasonalEvent, seasonalAnimationsEnabled, isPaused, setIsPaused, sensitivityTutorial } = useSettings();
     const { isIOS } = useIsMobile();
     const [isInitialLaunch, setIsInitialLaunch] = useState(false);
     
@@ -440,7 +440,12 @@ const App: React.FC = () => {
                             hideInstructionModal();
                         }}
                     >
-                        <InstructionContentComponent character={character} isMinigameInverted={isMinigameInverted} seasonalEvent={seasonalEvent} />
+                        <InstructionContentComponent 
+                            character={character} 
+                            isMinigameInverted={isMinigameInverted} 
+                            seasonalEvent={seasonalEvent} 
+                            isSensitivityTutorialActive={sensitivityTutorial}
+                        />
                     </InstructionModal>
                 )}
 

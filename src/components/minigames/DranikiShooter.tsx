@@ -87,7 +87,7 @@ const DranikiShooterWinScreen: React.FC<{ onContinue: () => void }> = ({ onConti
 }
 
 export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }> = ({ onWin, onLose }) => {
-    const { playSound, sensitivity } = useSettings();
+    const { playSound, sensitivity, setSensitivityTutorial, sensitivityTutorial } = useSettings();
     const { isInstructionModalVisible } = useNavigation();
     const { character } = useSession();
     const isMobile = useIsMobile();
@@ -149,16 +149,28 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
     const [status, setStatus] = useState<'initializing' | 'waiting' | 'playing' | 'won' | 'lost' | 'canceled'>('initializing');
     const [notifications, setNotifications] = useState<GameNotification[]>([]);
     const [canvasSize, setCanvasSize] = useState({ width: 320, height: INTERNAL_HEIGHT });
-    const [showSensitivityHint, setShowSensitivityHint] = useState(false);
     const notifIdCounter = useRef(0);
 
-    // --- Check for Sensitivity Hint (Only on first run) ---
+    // --- Sensitivity Tutorial Logic ---
     useEffect(() => {
         const hasSeenHint = localStorage.getItem('dada_shooter_sensitivity_hint');
         if (!hasSeenHint) {
-            setShowSensitivityHint(true);
+            setSensitivityTutorial(true);
         }
+        
+        return () => {
+            // Cleanup on unmount
+            setSensitivityTutorial(false);
+        };
     }, []);
+
+    // When standard instructions are closed, finish the sensitivity tutorial
+    useEffect(() => {
+        if (!isInstructionModalVisible && sensitivityTutorial) {
+            setSensitivityTutorial(false);
+            localStorage.setItem('dada_shooter_sensitivity_hint', 'true');
+        }
+    }, [isInstructionModalVisible, sensitivityTutorial]);
 
     // --- Dynamic Resolution ---
     useEffect(() => {
@@ -477,12 +489,9 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
         const isFiring = keysPressed.current['Space'];
 
         if (!hasGameStarted.current) {
-            if (turnLeft || turnRight || moveFwd || moveBack || isFiring) {
+            // Wait for user interaction to start the game loop only if tutorial is done
+            if (!isInstructionModalVisible && (turnLeft || turnRight || moveFwd || moveBack || isFiring)) {
                 hasGameStarted.current = true;
-                // Mark sensitivity hint as seen
-                localStorage.setItem('dada_shooter_sensitivity_hint', 'true');
-                setShowSensitivityHint(false);
-                
                 setStatus('playing');
                 currentRound.current = 1;
                 spawnWave(1);
@@ -1127,7 +1136,7 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
                 style={{ imageRendering: 'pixelated', backgroundColor: 'transparent' }} 
             />
             
-            {/* Start & Hints Overlay */}
+            {/* Start Overlay - Only show if tutorial is DONE and instructions are closed */}
             {!hasGameStarted.current && !isInstructionModalVisible && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/50">
                     <div className="text-white font-bold font-mono text-2xl md:text-4xl animate-pulse text-center px-4" style={{textShadow: '2px 2px 0 #000'}}>
@@ -1136,16 +1145,6 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
                     <div className="text-gray-300 mt-4 font-mono text-sm md:text-base bg-black/70 p-2 rounded">
                         {isMobile ? "ИСПОЛЬЗУЙ ДЖОЙСТИК" : "W, A, S, D + SPACE"}
                     </div>
-                    
-                    {/* Sensitivity Hint - SHOWS ONLY IF NOT SEEN BEFORE */}
-                    {showSensitivityHint && (
-                        <div className="absolute top-20 left-4 z-50 flex flex-col items-start animate-bounce pointer-events-none">
-                            <div className="text-4xl mb-1 text-yellow-300">⬆️</div>
-                            <div className="bg-black/80 p-2 rounded border border-yellow-400 text-yellow-300 font-bold text-xs max-w-[200px] text-center shadow-lg">
-                                ЧУВСТВИТЕЛЬНОСТЬ
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
             

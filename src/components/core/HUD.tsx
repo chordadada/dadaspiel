@@ -25,7 +25,7 @@ export const HUD: React.FC<HUDProps> = ({
     abilityUsedInCase, abilityUsedInSession, absurdEdgeUsedInSession, activateAbsurdEdge,
     currentCase, minigameIndex
   } = useSession();
-  const { isMuted, toggleMute, seasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, sensitivity, setSensitivity } = useSettings();
+  const { isMuted, toggleMute, seasonalEvent, seasonalAnimationsEnabled, toggleSeasonalAnimations, sensitivity, setSensitivity, sensitivityTutorial } = useSettings();
   const { activeProfile, requestLogout } = useProfile();
   const { screen, showInstructionModal } = useNavigation();
   const { isIOS } = useIsMobile();
@@ -37,8 +37,8 @@ export const HUD: React.FC<HUDProps> = ({
   const [isSticky, setIsSticky] = useState(false); // For permanent visibility toggle
   const [isHovering, setIsHovering] = useState(false); // For temporary visibility on hover/tap
   
-  // Force visibility if controls are highlighted (Step 2), but NOT if just visor is highlighted (Step 1)
-  const isHudVisible = isSticky || isHovering || highlightControls;
+  // Force visibility if controls are highlighted (Step 2) OR if sensitivity tutorial is active
+  const isHudVisible = isSticky || isHovering || highlightControls || sensitivityTutorial;
   const isTutorialMode = highlightVisor || highlightControls || highlightFullscreen;
 
   // Check if we should show sensitivity slider (Only for Draniki Shooter 6-3)
@@ -209,8 +209,8 @@ export const HUD: React.FC<HUDProps> = ({
         
         {/* Sensitivity Slider - Only visible in Shooter Minigame */}
         {isShooterGame && (
-            <div className="flex flex-col w-full mt-2 border-t border-gray-600 pt-2 animate-[fadeIn_0.5s]">
-                <label className="text-xs text-gray-400 mb-1">ЧУВСТВИТЕЛЬНОСТЬ</label>
+            <div className={`flex flex-col w-full mt-2 border-t border-gray-600 pt-2 animate-[fadeIn_0.5s] ${sensitivityTutorial ? 'ring-4 ring-yellow-400 p-2 bg-yellow-900/30 rounded z-50 animate-pulse' : ''}`}>
+                <label className={`text-xs mb-1 ${sensitivityTutorial ? 'text-yellow-300 font-bold' : 'text-gray-400'}`}>ЧУВСТВИТЕЛЬНОСТЬ</label>
                 <input 
                     type="range" 
                     min="0.5" 
