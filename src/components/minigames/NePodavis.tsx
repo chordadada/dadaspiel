@@ -8,6 +8,7 @@ import { PixelArt } from '../core/PixelArt';
 import { SoundType } from '../../utils/AudioEngine';
 import { MinigameHUD } from '../core/MinigameHUD';
 import { GUARD_ART_DATA } from '../../miscArt';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // --- КОНФИГУРАЦИЯ ПЕРСОНАЖЕЙ ---
 const CHAR_CONFIG = {
@@ -164,6 +165,7 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
     const { character } = useSession();
     const { playSound } = useSettings();
     const { isInstructionModalVisible } = useNavigation();
+    const { isMobile } = useIsMobile();
     
     // Config based on character
     const charConfig = useMemo(() => CHAR_CONFIG[character || Character.KANILA], [character]);
@@ -204,18 +206,34 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
     const charArt = useMemo(() => NEPODAVIS_HEAD_ART[character || Character.KANILA], [character]);
 
     const settings = useMemo(() => {
-        // Difficulty adjustments
-        // Slower base speed to reduce difficulty
-        let speedMult = 0.7;
-        let spawnRate = 0.04;
-        let bottomMargin = 93;
-        let topMargin = 107;
+        // Difficulty adjustments based on device
+        // On Mobile, make it harder (faster speed, more spawn) because tapping is easier
+        const mobSpeedMod = isMobile ? 1.25 : 1.0; 
+        const mobSpawnMod = isMobile ? 1.4 : 1.0;
+
+        // Base Settings (Desktop)
+        let speedMult = 0.7 * mobSpeedMod;
+        let spawnRate = 0.04 * mobSpawnMod;
+        let bottomMargin = 94;
+        let topMargin = 106;
         
-        if (character === Character.KANILA) { spawnRate = 0.03; speedMult = 0.6; bottomMargin = 91; topMargin = 109;}
-        if (character === Character.BLACK_PLAYER) { spawnRate = 0.05; speedMult = 0.8; bottomMargin = 95; topMargin = 105;}
+        if (character === Character.KANILA) { 
+            // Easy
+            spawnRate = 0.03 * mobSpawnMod; 
+            speedMult = 0.6 * mobSpeedMod; 
+            bottomMargin = 92; 
+            topMargin = 108;
+        }
+        if (character === Character.BLACK_PLAYER) { 
+            // Hard
+            spawnRate = 0.05 * mobSpawnMod; 
+            speedMult = 0.8 * mobSpeedMod; 
+            bottomMargin = 96; 
+            topMargin = 104;
+        }
 
         return { speedMult, spawnRate, bottomMargin, topMargin };
-    }, [character]);
+    }, [character, isMobile]);
 
     // Start Phase 2 Transition
     const triggerChoke = useCallback(() => {
