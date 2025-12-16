@@ -3,286 +3,558 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSession, useSettings, useNavigation } from '../../context/GameContext';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { Character } from '../../../types';
-import { NEPODAVIS_HEAD_ART, PIXEL_ART_PALETTE } from '../../../characterArt';
+import { NEPODAVIS_HEAD_ART, PIXEL_ART_PALETTE, BLACK_PLAYER_ART_DATA } from '../../../characterArt';
 import { PixelArt } from '../core/PixelArt';
 import { SoundType } from '../../utils/AudioEngine';
 import { MinigameHUD } from '../core/MinigameHUD';
+import { GUARD_ART_DATA } from '../../miscArt';
 
-const VideoModal: React.FC<{ url: string; onClose: () => void }> = ({ url, onClose }) => {
-    const getEmbedUrl = (videoUrl: string): string => {
-        if (videoUrl.includes("youtube.com/watch?v=")) {
-            return videoUrl.replace("watch?v=", "embed/") + "?autoplay=1&rel=0";
-        }
-        if (videoUrl.includes("vkvideo.ru/video-")) {
-            const parts = videoUrl.split('video-')[1]?.split('_');
-            if (parts && parts.length === 2) {
-                const oid = `-${parts[0]}`;
-                const id = parts[1];
-                return `https://vk.com/video_ext.php?oid=${oid}&id=${id}&autoplay=1`;
-            }
-        }
-        return videoUrl;
-    };
-    const embedUrl = getEmbedUrl(url);
-
-    return (
-        <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center animate-[fadeIn_0.3s]" onClick={onClose}>
-            <div className="relative w-11/12 max-w-4xl aspect-video bg-black pixel-border" onClick={(e) => e.stopPropagation()}>
-                <iframe
-                    width="100%"
-                    height="100%"
-                    src={embedUrl}
-                    title="Video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                ></iframe>
-                <button onClick={onClose} className="absolute -top-4 -right-4 pixel-button bg-red-600 text-2xl w-12 h-12 flex items-center justify-center z-10" aria-label="Закрыть видео">X</button>
-            </div>
-        </div>
-    );
+// --- КОНФИГУРАЦИЯ ПЕРСОНАЖЕЙ ---
+const CHAR_CONFIG = {
+    [Character.KANILA]: {
+        gasName: "КИСЛОРОД",
+        gasColor: "blue",
+        badItems: ['🍑', '🥒', '🍌', '🧱', '🍺', '👁️', '🍕'],
+        bubbleStyle: "bg-blue-400/60 border-blue-200 shadow-[inset_-4px_-4px_8px_rgba(0,0,100,0.5),inset_4px_4px_8px_rgba(255,255,255,0.8)]",
+        winTitle: "ЧТО-ТО ОТКАШЛЯЛОСЬ!",
+        winText: "Пойду отнесу в галерею!",
+        winColor: "text-blue-400"
+    },
+    [Character.SEXISM]: {
+        gasName: "ВЕСЕЛЯЩИЙ ГАЗ",
+        gasColor: "pink",
+        badItems: ['🍑', '🍅', '🍆', '🍷', '🍩', '🔮', '🧮'],
+        bubbleStyle: "bg-pink-400/60 border-pink-200 shadow-[inset_-4px_-4px_8px_rgba(150,0,50,0.5),inset_4px_4px_8px_rgba(255,200,200,0.8)]",
+        winTitle: "УДАЧНЫЙ ПЕРФОРМАНС!",
+        winText: "Чуть было не стал инсталляцией!",
+        winColor: "text-pink-400"
+    },
+    [Character.BLACK_PLAYER]: {
+        gasName: "КВАНТОВЫЙ ГАЗ",
+        gasColor: "black",
+        badItems: ['🍑', '0', '1', '💊', '🎲', '8', '💾'],
+        bubbleStyle: "bg-black-600/60 border-purple-400 shadow-[inset_-4px_-4px_8px_rgba(50,0,50,0.5),inset_4px_4px_8px_rgba(200,100,255,0.8)]",
+        winTitle: "СИСТЕМА ОЧИЩЕНА!",
+        winText: "Требуется спящий режим!",
+        winColor: "text-purple-500"
+    }
 };
 
+// Пузырь Газа (Динамический стиль)
+const GasBubble: React.FC<{ styleClass: string }> = ({ styleClass }) => (
+    <div className={`w-12 h-12 rounded-full border-2 backdrop-blur-sm animate-pulse ${styleClass}`}>
+        <div className="absolute top-2 left-2 w-3 h-3 bg-white rounded-full opacity-80"></div>
+    </div>
+);
 
-// Экран победы: получение "стрададаховки".
+// Рука для приёма Геймлиха (Эмодзи)
+const HeimlichHand: React.FC = () => (
+    <div className="absolute top-1/2 right-[-150px] text-[150px] transform -translate-y-1/2 animate-[heimlich-thrust_0.2s_ease-out_forwards] z-50 filter drop-shadow-xl cursor-default select-none">
+        👋
+    </div>
+);
+
+// Экран победы (Адаптивный)
 export const NePodavisWinScreen: React.FC<{ onContinue: () => void; character: Character | null }> = ({ onContinue, character }) => {
     const { playSound } = useSettings();
-    const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const config = CHAR_CONFIG[character || Character.KANILA];
 
     useEffect(() => {
         playSound(SoundType.WIN_NEPODAVIS);
     }, [playSound]);
     
-    const handlePlayVideo = () => {
-        playSound(SoundType.BUTTON_CLICK);
-        setVideoUrl("https://www.youtube.com/watch?v=29p14n_qeN0");
-    };
-
-    let content = null;
-
-    // --- KANILA: GONZO SURVIVAL ---
-    if (character === Character.KANILA) {
-        content = (
-            <div
-                onClick={handlePlayVideo}
-                className="w-96 h-60 bg-yellow-200 p-4 pixel-border flex flex-col text-black transform rotate-2 cursor-pointer hover:scale-105 transition-transform relative overflow-hidden"
-                style={{textShadow: 'none'}}
-            >
-                {/* Coffee stains */}
-                <div className="absolute top-[-20px] right-[-20px] w-24 h-24 border-8 border-yellow-700/30 rounded-full"></div>
-                <div className="absolute bottom-[20px] left-[40px] w-16 h-16 border-4 border-yellow-700/20 rounded-full"></div>
-                
-                <h3 className="text-xl text-center font-bold font-mono uppercase border-b-2 border-black pb-2">Сертификат Выжившего</h3>
-                <div className="flex-grow flex flex-col justify-center mt-2 font-mono text-sm space-y-2">
-                    <p>ИМЯ: <strong>КАНИЛА Д.</strong></p>
-                    <p>СТАТУС: <strong>ЖИВОЙ (ВРОДЕ)</strong></p>
-                    <p>ДИАГНОЗ: <strong>ОСТРЫЙ ДАДАИЗМ</strong></p>
-                </div>
-                <div className="absolute bottom-4 right-4 transform -rotate-12 border-4 border-red-600 px-2 py-1 text-red-600 font-black text-xl">
-                    ПРОВЕРЕНО
-                </div>
-            </div>
-        );
-    }
-    // --- SEXISM: CRITIC REVIEW ---
-    else if (character === Character.SEXISM) {
-        content = (
-            <div
-                onClick={handlePlayVideo}
-                className="w-96 h-60 bg-white p-6 border-double border-4 border-gray-300 shadow-2xl flex flex-col text-gray-800 cursor-pointer hover:scale-105 transition-transform"
-                style={{textShadow: 'none', fontFamily: 'serif'}}
-            >
-                <div className="flex justify-between items-start border-b border-gray-300 pb-2 mb-2">
-                    <h3 className="text-2xl font-bold italic text-black">Le Critique</h3>
-                    <div className="text-xs text-gray-500">Vol. 317</div>
-                </div>
-                <div className="flex-grow text-sm italic leading-relaxed">
-                    "Подача была агрессивной, но текстура экзистенциального ужаса... божественна. Послевкусие абсурда остаётся надолго."
-                </div>
-                <div className="mt-2 flex justify-between items-end">
-                    <div className="font-bold">- С. Эванович</div>
-                    <div className="flex text-yellow-500 text-2xl">★★★★★</div>
-                </div>
-            </div>
-        );
-    }
-    // --- BLACK PLAYER: ENTITY REPORT ---
-    else if (character === Character.BLACK_PLAYER) {
-        content = (
-            <div
-                onClick={handlePlayVideo}
-                className="w-96 h-60 bg-black p-4 border-2 border-green-500 flex flex-col text-green-500 cursor-pointer hover:scale-105 transition-transform font-mono"
-                style={{textShadow: '0 0 5px #00ff00'}}
-            >
-                <div className="text-xs mb-4 border-b border-green-900 pb-1">:: SYSTEM_LOG_317 ::</div>
-                <div className="flex-grow space-y-1 text-sm">
-                    <p>{'>'} SCANNING SUBJECT...</p>
-                    <p>{'>'} BIOLOGICAL NEEDS: <span className="text-red-500">NULL</span></p>
-                    <p>{'>'} CHOKE HAZARD: <span className="text-red-500">NEGATIVE</span></p>
-                    <p>{'>'} ABSORPTION RATE: 100%</p>
-                </div>
-                <div className="animate-pulse bg-green-900 text-black text-center font-bold py-1 mt-2">
-                    ASSIMILATION COMPLETE
-                </div>
-            </div>
-        );
-    }
-    // --- DEFAULT ---
-    else {
-        content = (
-            <div
-                onClick={handlePlayVideo}
-                className="w-96 h-60 bg-slate-200 p-4 pixel-border flex flex-col text-black transform rotate-3 cursor-pointer hover:scale-105 transition-transform"
-                style={{textShadow: 'none'}}
-            >
-                <h3 className="text-xl text-center font-bold">Медицинская Стрададаховка</h3>
-                <div className="flex-grow flex items-center justify-between mt-4">
-                    <div className="text-left text-sm space-y-1"><p>Страхователь: <strong>Георгий</strong></p><p>Риски: <strong>Нелепость Бытия</strong></p><p>Покрытие: <strong>До следующего раза</strong></p><p>Франшиза: <strong>Одна жизнь</strong></p></div>
-                    <div className="text-center"><div className="w-28 h-36 border-4 border-red-600 rounded-full flex items-center justify-center text-red-600 text-md font-bold">ДАДА <br/> APPROVED</div></div>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <>
-            <div className="absolute inset-0 bg-black/80 z-40 flex flex-col items-center justify-center animate-[fadeIn_0.5s]">
-                 <h2 className="text-3xl text-yellow-300 mb-8">ВЫ ВЫЖИЛИ!</h2>
-                 {content}
-                  <button onClick={onContinue} className="pixel-button absolute bottom-8 p-4 text-2xl z-50 bg-green-700 hover:bg-green-800">ПРОХОДИМ</button>
-            </div>
-            {videoUrl && <VideoModal url={videoUrl} onClose={() => setVideoUrl(null)} />}
-        </>
+        <div className="absolute inset-0 bg-black/90 z-40 flex flex-col items-center justify-center animate-[fadeIn_0.5s]">
+             {/* Character Specific Visuals for Win Screen */}
+             {character === Character.SEXISM && <div className="text-6xl mb-4 animate-bounce">💋</div>}
+             {character === Character.BLACK_PLAYER && (
+                 <div className="mb-4 transform scale-150 animate-pulse">
+                     <PixelArt artData={BLACK_PLAYER_ART_DATA} palette={PIXEL_ART_PALETTE} pixelSize={4} />
+                 </div>
+             )}
+
+             <h2 className={`text-4xl ${config.winColor} mb-8 font-bold text-center`}>{config.winTitle}</h2>
+             <div className="text-xl text-white mb-8 text-center max-w-md px-4">
+                {config.winText}
+             </div>
+             <button onClick={onContinue} className={`pixel-button p-4 text-2xl z-50 ${character === Character.BLACK_PLAYER ? 'bg-purple-900 hover:bg-purple-800' : 'bg-green-700 hover:bg-green-800'}`}>
+                ПРОХОДИМ
+             </button>
+        </div>
     );
 };
 
-// Компонент головы игрока с анимациями.
-const PlayerHead: React.FC<{ artData: string[], isHit: boolean, isRecovering: boolean }> = ({ artData, isHit, isRecovering }) => {
-    const animationClass = isRecovering ? 'animate-recover-shake' : isHit ? 'animate-hit-shake' : '';
-    return <div className={`relative ${animationClass}`}><PixelArt artData={artData} palette={PIXEL_ART_PALETTE} pixelSize={8} /></div>;
+// Экран поражения (Вахтёрша)
+const HeimlichDefeatScreen: React.FC<{ onRetry: () => void }> = ({ onRetry }) => {
+    return (
+        <div className="absolute inset-0 bg-red-900 z-50 flex flex-col items-center justify-center animate-[fadeIn_0.2s]">
+            <div className="mb-4 transform scale-150">
+                <PixelArt artData={GUARD_ART_DATA} palette={PIXEL_ART_PALETTE} pixelSize={5} />
+            </div>
+            <h2 className="text-3xl text-white font-black text-center mb-2">ПРИЁМ ГЕЙМЛИХА!</h2>
+            <p className="text-xl text-yellow-300 font-mono text-center px-4 mb-8 bg-black/50 p-2 animate-pulse">
+                ДИАГНОЗ: ОСТРАЯ НЕПЕРЕНОСИМОСТЬ ДАДАИЗМА
+            </p>
+            <button onClick={onRetry} className="pixel-button p-4 text-xl bg-gray-700 hover:bg-gray-600">
+                ТАК ВОТ ОНО ЧТО!
+            </button>
+        </div>
+    );
 };
 
-const COUGH_PARTICLE_COLORS = ['#ffdd00', '#ff0000', '#00ff00', '#0000ff', '#ffffff'];
+// Компонент головы игрока
+const PlayerHead: React.FC<{ artData: string[], isHit: boolean, isRecovering: boolean, isCoughing: boolean, hasCombo: boolean }> = ({ artData, isHit, isRecovering, isCoughing, hasCombo }) => {
+    let animationClass = '';
+    if (isCoughing) animationClass = 'animate-cough-lunge';
+    else if (isRecovering) animationClass = 'animate-recover-shake';
+    else if (isHit) animationClass = 'animate-hit-shake';
+
+    return (
+        <div className={`relative ${animationClass} transition-transform duration-200 ${isRecovering ? 'scale-125' : 'scale-100'}`}>
+            {hasCombo && (
+                <div className="absolute -inset-4 rounded-full bg-yellow-400/20 blur-xl animate-pulse z-0"></div>
+            )}
+            <div className="relative z-10">
+                <PixelArt artData={artData} palette={PIXEL_ART_PALETTE} pixelSize={8} />
+            </div>
+        </div>
+    );
+};
+
+// Визуальный эффект удушья (Красная пульсация)
+const ChokeOverlay: React.FC<{ intensity: number }> = ({ intensity }) => {
+    return (
+        <div 
+            className="absolute inset-0 pointer-events-none z-30 transition-colors duration-100"
+            style={{
+                backgroundColor: `rgba(150, 0, 0, ${intensity * 0.6})`,
+                boxShadow: `inset 0 0 ${intensity * 100}px rgba(50,0,0,0.9)`
+            }}
+        >
+            <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_40%,#450a0a_100%)] opacity-80"></div>
+        </div>
+    );
+};
+
+interface Projectile {
+    id: number;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    content: string | React.ReactNode;
+    type: 'bad' | 'good';
+    angle: number;
+    rotSpeed: number;
+}
+
+interface ExpelledItem {
+    id: number;
+    char: string;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    scale: number;
+    rot: number;
+    rotSpeed: number;
+}
 
 export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({ onWin, onLose }) => {
     const { character } = useSession();
     const { playSound } = useSettings();
     const { isInstructionModalVisible } = useNavigation();
+    
+    // Config based on character
+    const charConfig = useMemo(() => CHAR_CONFIG[character || Character.KANILA], [character]);
+
+    // Game State
+    const [status, setStatus] = useState<'playing'|'won'|'lost'>('playing');
+    const [gamePhase, setGamePhase] = useState<'collect' | 'choke'>('collect');
+    const [heimlichAnimation, setHeimlichAnimation] = useState(false);
+    
+    // Phase 1: Collection
+    const [otbitost, setOtbitost] = useState(0);
+    const [projectiles, setProjectiles] = useState<Projectile[]>([]);
+    
+    // Phase 2: Choke
+    const [chokeLevel, setChokeLevel] = useState(0); // 0 to 100
+    const [currentBPM, setCurrentBPM] = useState(0);
+    const [bpmFeedback, setBpmFeedback] = useState<'good' | 'bad' | null>(null);
+    const [comboStreak, setComboStreak] = useState(0);
+    
+    // Visuals & Animations
+    const [isHitVisual, setIsHitVisual] = useState(false);
+    const [isCoughing, setIsCoughing] = useState(false);
+    const [particles, setParticles] = useState<any[]>([]);
+    const [feedback, setFeedback] = useState<{id:number, text:string, x:number, y:number, color:string}[]>([]);
+		
+    // Win Animation State
+    const [isExpelling, setIsExpelling] = useState(false);
+    const [expelledItems, setExpelledItems] = useState<ExpelledItem[]>([]);
+
+    // Refs
     const hasFinished = useRef(false);
     const projectileId = useRef(0);
     const particleId = useRef(0);
-    const coughParticleId = useRef(0);
-    const coughForce = useRef(0); // "Сила кашля" от кликов.
-
-    const [round, setRound] = useState(1);
-    const [status, setStatus] = useState<'playing'|'won'|'lost'>('playing');
-    const [projectiles, setProjectiles] = useState<any[]>([]);
-    const [hitCount, setHitCount] = useState(0);
-    
-    // Игра состоит из двух фаз: 'avoid' (уклонение) и 'recover' (откашливание).
-    const [gamePhase, setGamePhase] = useState<'avoid' | 'recover'>('avoid');
-    const [chokeLevel, setChokeLevel] = useState(50); // Уровень удушья в фазе 'recover'.
-    
-    const [isHitVisual, setIsHitVisual] = useState(false);
-    const [particles, setParticles] = useState<any[]>([]);
-    const [coughParticles, setCoughParticles] = useState<any[]>([]);
-
-    // Параметры сложности для каждого раунда.
-    const roundSettings = useMemo(() => {
-        const baseSettings = [
-            { id: 1, spawnRate: 0.07, speed: 10, chokeIncrease: 5, chokeReduce: 8, hitsToRecover: 3 },
-            { id: 2, spawnRate: 0.12, speed: 15, chokeIncrease: 7, chokeReduce: 6, hitsToRecover: 3 },
-            { id: 3, spawnRate: 0.18, speed: 20, chokeIncrease: 9, chokeReduce: 5, hitsToRecover: 3 },
-        ][round - 1];
-
-        switch(character) {
-            case Character.KANILA: // Easy
-                return { ...baseSettings, spawnRate: baseSettings.spawnRate * 0.8, speed: baseSettings.speed * 0.8, chokeIncrease: baseSettings.chokeIncrease * 0.7, chokeReduce: baseSettings.chokeReduce * 1.3, hitsToRecover: 5 };
-            case Character.BLACK_PLAYER: // Hard
-                return { ...baseSettings, spawnRate: baseSettings.spawnRate * 1.3, speed: baseSettings.speed * 1.2, chokeIncrease: baseSettings.chokeIncrease * 1.3, chokeReduce: baseSettings.chokeReduce * 0.7, hitsToRecover: 2 };
-            default: // Medium (Sexism)
-                return baseSettings;
-        }
-    }, [round, character]);
+    const lastTapTime = useRef<number>(0);
+    const gameAreaRef = useRef<HTMLDivElement>(null);
 
     const charArt = useMemo(() => NEPODAVIS_HEAD_ART[character || Character.KANILA], [character]);
-    const dadaProjectileColor = useMemo(() => { if (round === 2) return 'text-cyan-300'; if (round === 3) return 'text-lime-300'; return 'text-yellow-300'; }, [round]);
 
-    // Сброс состояния при начале нового раунда.
-    useEffect(() => { setGamePhase('avoid'); setProjectiles([]); setParticles([]); setCoughParticles([]); projectileId.current = 0; coughForce.current = 0; setHitCount(0); setStatus('playing'); hasFinished.current = false; }, [round]);
-    
-    // Переход в фазу 'recover' после N попаданий.
-    useEffect(() => { if (hitCount >= roundSettings.hitsToRecover && gamePhase === 'avoid') { setGamePhase('recover'); setChokeLevel(50); setProjectiles([]); } }, [hitCount, gamePhase, roundSettings.hitsToRecover]);
-
-    // Основной игровой цикл.
-    useGameLoop(useCallback((deltaTime) => {
-        if(hasFinished.current || status !== 'playing') return;
-        const dtSec = deltaTime / 1000;
+    const settings = useMemo(() => {
+        // Difficulty adjustments
+        // Slower base speed to reduce difficulty
+        let speedMult = 0.7;
+        let spawnRate = 0.04;
+        let bottomMargin = 93;
+        let topMargin = 107;
         
-        if (gamePhase === 'avoid') {
-            // Появление летящих объектов.
-            if (Math.random() < roundSettings.spawnRate) {
-                const angle = Math.random() * 2 * Math.PI;
-                const content = ['🎷🪕🥁', '🥒🥔🧅', 'word', '🍌🍑🍓', '💧🚾🌊'][Math.floor(Math.random()*5)];
-                setProjectiles(p => [...p, { id: projectileId.current++, x: 50 + Math.sin(angle) * 70, y: 50 - Math.cos(angle) * 70, vx: -Math.sin(angle), vy: Math.cos(angle), content }]);
+        if (character === Character.KANILA) { spawnRate = 0.03; speedMult = 0.6; bottomMargin = 91; topMargin = 109;}
+        if (character === Character.BLACK_PLAYER) { spawnRate = 0.05; speedMult = 0.8; bottomMargin = 95; topMargin = 105;}
+
+        return { speedMult, spawnRate, bottomMargin, topMargin };
+    }, [character]);
+
+    // Start Phase 2 Transition
+    const triggerChoke = useCallback(() => {
+        if (gamePhase === 'choke') return;
+        playSound(SoundType.BOSS_ROAR);
+        setGamePhase('choke');
+        setChokeLevel(85); // Start high!
+        setProjectiles([]);
+        lastTapTime.current = 0; // Reset rhythm
+        setComboStreak(0); // Reset combo
+        setFeedback(f => [...f, {id: Date.now(), text: "УДУШЬЕ!", x: 50, y: 50, color: 'text-red-600 text-4xl'}]);
+    }, [gamePhase, playSound]);
+
+    // Trigger Heimlich Defeat Sequence
+    const triggerHeimlich = useCallback(() => {
+        if (heimlichAnimation) return;
+        setHeimlichAnimation(true);
+        // Sequence handled in useEffect below
+    }, [heimlichAnimation]);
+
+    // Handle Heimlich Sequence Timing
+    useEffect(() => {
+        if (heimlichAnimation) {
+            // 1. Hand appears (CSS animation starts)
+            
+            // 2. Slap sound at impact point (approx 0.1s in)
+            const t1 = setTimeout(() => {
+                playSound(SoundType.SLAP);
+                // Visual shake handled by CSS on player
+                setIsHitVisual(true);
+            }, 100);
+
+            // 3. Screen clear & Gasp (0.5s in)
+            const t2 = setTimeout(() => {
+                setChokeLevel(0); // "Returns to normal"
+                playSound(SoundType.GASP);
+            }, 500);
+
+            // 4. Defeat Screen (1.5s in)
+            const t3 = setTimeout(() => {
+                hasFinished.current = true;
+                setStatus('lost');
+            }, 1500);
+
+            return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+        }
+    }, [heimlichAnimation, playSound]);
+
+    // Trigger Win Expulsion Animation
+    const triggerExpulsion = useCallback(() => {
+        setIsExpelling(true);
+        playSound(SoundType.GASP);
+        
+        // Generate burst of items
+        const newItems: ExpelledItem[] = [];
+        const count = 30;
+        const badItems = charConfig.badItems;
+        
+        for(let i=0; i<count; i++) {
+            const angle = -Math.PI / 2 + (Math.random() - 0.5) * 2; // Upwards cone
+            const speed = 80 + Math.random() * 100;
+            
+            newItems.push({
+                id: i,
+                char: badItems[i % badItems.length],
+                x: 50,
+                y: 50,
+                vx: Math.cos(angle) * speed * 0.5,
+                vy: Math.sin(angle) * speed,
+                scale: 0.5,
+                rot: Math.random() * 360,
+                rotSpeed: (Math.random() - 0.5) * 360
+            });
+        }
+        setExpelledItems(newItems);
+        setIsHitVisual(true); // Shake head
+
+        // Play burst sound
+        let i = 0;
+        const interval = setInterval(() => {
+            if(i < 5) {
+                playSound(SoundType.COUGH);
+                i++;
+            } else clearInterval(interval);
+        }, 150);
+
+        // End game after animation
+        setTimeout(() => {
+            setStatus('won');
+        }, 2500);
+
+    }, [charConfig, playSound]);
+
+    // Core Logic for Rhythm Tapping (shared between Click and Spacebar)
+    const processRhythmTap = useCallback(() => {
+        if (otbitost <= 0) {
+            setFeedback(f => [...f, {id: Date.now(), text: "НЕТ БОЛЬШЕ СИЛ!", x: 50, y: 70, color: 'text-gray-500'}]);
+            return; // Cannot fight back without resilience
+        }
+
+        const now = Date.now();
+        
+        if (lastTapTime.current === 0) {
+            // First tap just starts the timer
+            lastTapTime.current = now;
+            return;
+        }
+
+        const diff = now - lastTapTime.current;
+        lastTapTime.current = now;
+        
+        // Calculate BPM based on interval
+        const bpm = Math.round(60000 / diff);
+        setCurrentBPM(bpm);
+
+        // Logic: 2 clicks = 1 impact event. We calculate impact on every click based on interval from previous.
+        
+        // Tolerance Window depends on Character
+        if (bpm >= settings.bottomMargin && bpm <= settings.topMargin) {
+            // Good Hit
+            playSound(SoundType.COUGH); // Satisfying sound
+            
+            // Combo Logic
+            const newStreak = comboStreak + 1;
+            setComboStreak(newStreak);
+            
+            let chokeReduction = 2.5;
+            
+            // Combo Bonus (Every 3 hits)
+            if (newStreak % 3 === 0) {
+                playSound(SoundType.POWERUP);
+                chokeReduction += 3.0; // Bonus reduction
+                setFeedback(f => [...f, {id: Date.now(), text: `COMBO x${newStreak}!`, x: 50, y: 30, color: 'text-yellow-300 text-3xl font-black'}]);
             }
-            // Движение и проверка столкновений объектов.
+
+            setChokeLevel(c => Math.max(0, c - chokeReduction)); // More effective!
+            setOtbitost(o => Math.max(0, o - 0.5));
+            setBpmFeedback('good');
+            
+            // Trigger visual cough
+            setIsCoughing(true);
+            setTimeout(() => setIsCoughing(false), 150);
+            
+            // Particles
+            const a = Math.random() * 6.28; const s = 40;
+            setParticles(pts => [...pts, { id: particleId.current++, x: 50, y: 50, vx: Math.cos(a)*s, vy: Math.sin(a)*s, color: '#4ade80' }]);
+            setTimeout(() => setParticles(pts => pts.slice(1)), 300);
+
+        } else {
+            // Bad Hit
+            playSound(SoundType.PUNISHMENT_CLICK); // Dull sound
+            setComboStreak(0); // Reset combo
+            
+            setChokeLevel(c => Math.max(0, c - 1.0)); // Less effective
+            setOtbitost(o => Math.max(0, o - 1.0)); // More expensive
+            setBpmFeedback('bad');
+        }
+    }, [otbitost, playSound, comboStreak]);
+
+    // Keyboard Listener for Spacebar
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (status !== 'playing' || heimlichAnimation || isInstructionModalVisible || isExpelling) return;
+            
+            if (e.code === 'Space') {
+                if (gamePhase === 'choke') {
+                    e.preventDefault(); // Prevent scrolling
+                    processRhythmTap();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [status, heimlichAnimation, isInstructionModalVisible, gamePhase, processRhythmTap, isExpelling]);
+
+    // Game Loop
+    useGameLoop(useCallback((deltaTime) => {
+				// Special case: Run loop during expulsion animation
+        if (isExpelling) {
+            const dtSec = deltaTime / 1000;
+            setExpelledItems(items => items.map(item => ({
+                ...item,
+                x: item.x + item.vx * dtSec,
+                y: item.y + item.vy * dtSec,
+                vy: item.vy + 100 * dtSec, // Gravity
+                scale: item.scale + 1.5 * dtSec, // Grow rapidly
+                rot: item.rot + item.rotSpeed * dtSec
+            })));
+            return;
+        }
+
+        if(hasFinished.current || status !== 'playing' || heimlichAnimation) return;
+        const dtSec = deltaTime / 1000;
+
+        if (gamePhase === 'collect') {
+            // Spawn Projectiles
+            if (Math.random() < settings.spawnRate) {
+                const isOxygen = Math.random() < 0.3; // 30% Oxygen
+                const type = isOxygen ? 'good' : 'bad';
+                // Use character-specific bad items
+                const content = isOxygen 
+                    ? <GasBubble styleClass={charConfig.bubbleStyle} /> 
+                    : charConfig.badItems[Math.floor(Math.random() * charConfig.badItems.length)];
+                
+                const dist = 80; 
+                
+                // Spawn position (Circle edge)
+                const angle = Math.random() * 2 * Math.PI;
+                const startX = 50 + Math.sin(angle) * dist;
+                const startY = 50 - Math.cos(angle) * dist;
+
+                // Target position (NOT always center 50,50)
+                // Add spread so some miss the player
+                const spread = 20; // Target within 30-70 range
+                const targetX = 50 + (Math.random() - 0.5) * spread;
+                const targetY = 50 + (Math.random() - 0.5) * spread;
+                
+                // Calculate velocity vector towards target
+                const dx = targetX - startX;
+                const dy = targetY - startY;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                const vx = dx / distance;
+                const vy = dy / distance;
+                
+                setProjectiles(p => [...p, { 
+                    id: projectileId.current++, 
+                    x: startX, 
+                    y: startY, 
+                    vx, vy, 
+                    content, type, 
+                    angle: 0, rotSpeed: (Math.random() - 0.5) * 200
+                }]);
+            }
+
+            // Move & Check Collision
             setProjectiles(currentProjs => {
                 const updated = [];
+                // Calculate speed based on resilience (Otbitost).
+                // Base speed is ~12. Increases linearly with Otbitost to make it harder.
+                // At 100 Otbitost, speed +10.
+                const speed = (12 + (otbitost * 0.1)) * settings.speedMult;
+
                 for (const p of currentProjs) {
-                    const newX = p.x + p.vx * roundSettings.speed * dtSec; const newY = p.y + p.vy * roundSettings.speed * dtSec;
+                    const newX = p.x + p.vx * speed * dtSec; 
+                    const newY = p.y + p.vy * speed * dtSec;
                     const dist = Math.sqrt(Math.pow(newX - 50, 2) + Math.pow(newY - 50, 2));
-                    if (dist < 12) { playSound(SoundType.PLAYER_HIT); setHitCount(c => c + 1); setIsHitVisual(true); setTimeout(() => setIsHitVisual(false), 400); continue; } // Попадание!
-                    if (dist > 100) continue;
-                    updated.push({ ...p, x: newX, y: newY });
+                    
+                    // Hit Player Logic
+                    if (dist < 8) { 
+                        if (p.type === 'bad') {
+                            // Bad item hit face -> Choke starts immediately
+                            playSound(SoundType.PLAYER_HIT);
+                            triggerChoke();
+                            return []; // Clear projectiles
+                        } else {
+                            // Oxygen inhaled -> Good!
+                            playSound(SoundType.LIQUID_CATCH);
+                            setOtbitost(o => o + 2);
+                            setFeedback(f => [...f, {id: Date.now(), text: "+2", x: 50, y: 40, color: 'text-blue-300'}]);
+                        }
+                        continue; 
+                    } 
+                    
+                    if (dist > 100) continue; 
+                    updated.push({ ...p, x: newX, y: newY, angle: p.angle + p.rotSpeed * dtSec });
                 }
                 return updated;
             });
-        } else if (gamePhase === 'recover') {
-            // Уровень удушья растет со временем.
-            const chokeIncrease = roundSettings.chokeIncrease * dtSec;
-            // Клик (кашель) уменьшает удушье. Сила кашля со временем ослабевает.
-            const chokeDecrease = coughForce.current * 2 * dtSec;
-            coughForce.current = Math.max(0, coughForce.current - roundSettings.chokeReduce * 2 * dtSec);
-            setChokeLevel(c => {
-                const newChoke = Math.min(100, Math.max(0, c + chokeIncrease - chokeDecrease));
-                if (newChoke >= 100 && !hasFinished.current) { hasFinished.current = true; setStatus('lost'); setTimeout(onLose, 2000); } // Проигрыш
-                if (c > 0 && newChoke <= 0 && !hasFinished.current) { // Победа в раунде
-                    if (round < 3) setRound(r => r + 1);
-                    else { hasFinished.current = true; setStatus('won'); }
-                }
-                return newChoke;
-            });
-            // Анимация частиц кашля.
-            setCoughParticles(currentParticles => currentParticles.map(p => ({ ...p, x: p.x + p.vx * dtSec, y: p.y + p.vy * dtSec, vy: p.vy + 40 * dtSec, life: p.life - dtSec })).filter(p => p.life > 0));
-        }
-    }, [status, gamePhase, round, roundSettings, onLose, playSound]), status === 'playing' && !isInstructionModalVisible);
 
-    // Клик по летящему объекту для его уничтожения.
-    const handleProjectileClick = (e: React.MouseEvent | React.TouchEvent, id: number) => {
+        } else if (gamePhase === 'choke') {
+            
+            // Check Otbitost exhaustion first!
+            if (otbitost <= 0) {
+                // If out of resilience, choke increases rapidly (doom scenario)
+                setChokeLevel(c => {
+                    const next = c + 35 * dtSec; // Super fast fill
+                    if (next >= 99 && !hasFinished.current) {
+                        triggerHeimlich();
+                        return 99;
+                    }
+                    return next;
+                });
+            } else {
+                // Normal choke increase
+                setChokeLevel(c => {
+                    const next = c + 1.5 * dtSec;
+                    // Defeat at 99%
+                    if (next >= 99 && !hasFinished.current) {
+                        triggerHeimlich();
+                        return 99;
+                    }
+                    return next;
+                });
+            }
+            
+            // Win condition: Drop below 50%
+            if (chokeLevel < 50 && !hasFinished.current && !isExpelling) {
+                hasFinished.current = true;
+								// Trigger Expulsion animation BEFORE setting status to 'won'
+                triggerExpulsion();
+            }
+        }
+        
+        // Visual cleanup
+        setFeedback(prev => prev.filter(f => Math.random() > 0.02)); // Decay
+
+    }, [status, gamePhase, settings, triggerChoke, chokeLevel, playSound, triggerHeimlich, heimlichAnimation, otbitost, charConfig, isExpelling, triggerExpulsion]), status === 'playing' && !isInstructionModalVisible);
+
+    // Interaction Handler
+    const handleInteraction = (e: React.MouseEvent | React.TouchEvent, type: 'projectile' | 'rhythm', id?: number) => {
         e.stopPropagation();
-        if (gamePhase !== 'avoid' || status !== 'playing') return;
-        playSound(SoundType.DESTROY);
-        const projectile = projectiles.find(p => p.id === id);
-        if (projectile) {
-             const newParticles = Array.from({length: 8}).map((_, i) => ({ id: particleId.current++, x: projectile.x, y: projectile.y, angle: i * 45 }));
-             setParticles(p => [...p, ...newParticles]);
-             setTimeout(() => setParticles(p => p.filter(particle => !newParticles.some(np => np.id === particle.id))), 400);
-        }
-        setProjectiles(projs => projs.filter(p => p.id !== id));
-    };
+        if (status !== 'playing' || heimlichAnimation || isExpelling) return;
 
-    // Клик по голове для "откашливания".
-    const handleRecoverClick = () => {
-        if (gamePhase !== 'recover' || status !== 'playing') return;
-        playSound(SoundType.COUGH);
-        coughForce.current += roundSettings.chokeReduce; // Увеличиваем силу кашля.
-        // Создаем частицы кашля.
-        const newParticles = Array.from({length: 8}).map(() => {
-            const angle = -Math.PI + Math.random() * Math.PI; const speed = 30 + Math.random() * 30;
-            return { id: coughParticleId.current++, x: 50, y: 50, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, color: COUGH_PARTICLE_COLORS[Math.floor(Math.random() * COUGH_PARTICLE_COLORS.length)], life: 0.5 + Math.random() * 0.5 };
-        });
-        setCoughParticles(p => [...p, ...newParticles]);
+        // --- Phase 1: Deflect Items ---
+        if (type === 'projectile' && gamePhase === 'collect') {
+            const p = projectiles.find(p => p.id === id);
+            if (!p) return;
+
+            if (p.type === 'bad') {
+                // Deflect Bad -> +1 Resilience
+                playSound(SoundType.SWOOSH);
+                setOtbitost(o => o + 1);
+                // Visual pop
+                const newParticles = Array.from({length: 4}).map((_, i) => ({ id: particleId.current++, x: p.x, y: p.y, angle: i * 90 }));
+                setParticles(pts => [...pts, ...newParticles]);
+                setTimeout(() => setParticles(pts => pts.slice(4)), 400);
+            } else {
+                // Pop Oxygen -> -1 Resilience (Bad move, but not fatal)
+                playSound(SoundType.ITEM_CATCH_BAD);
+                setOtbitost(o => Math.max(0, o - 1));
+                setFeedback(f => [...f, {id: Date.now(), text: "-1", x: p.x, y: p.y, color: 'text-blue-500'}]);
+            }
+            setProjectiles(list => list.filter(item => item.id !== id));
+        } 
+        
+        // --- Phase 2: Rhythm Tap ---
+        else if (type === 'rhythm' && gamePhase === 'choke') {
+            processRhythmTap();
+        }
     };
 
     const handleWinContinue = () => {
@@ -290,41 +562,186 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
         onWin();
     };
 
+    const handleLose = () => {
+        playSound(SoundType.BUTTON_CLICK);
+        onLose();
+    };
+
+    // Derived Visuals
+    const intensity = gamePhase === 'choke' ? chokeLevel / 100 : 0;
+
     return (
-        <div className="w-full h-full pulsing-bg flex flex-col items-center justify-center relative overflow-hidden" onClick={handleRecoverClick} onTouchStart={handleRecoverClick}>
+        <div className="w-full h-full relative overflow-hidden bg-gray-900 select-none touch-none">
              <style>{`
-                @keyframes pulse-bg { 0% { background-size: 100% 100%; } 50% { background-size: 120% 120%; } 100% { background-size: 100% 100%; } }
-                .pulsing-bg { background: radial-gradient(circle, #4a0000 0%, #1a0000 70%, #000 100%); animation: pulse-bg 5s ease-in-out infinite; }
-                @keyframes hit-shake { 0%, 100% { transform: translate(0, 0) rotate(0); } 10% { transform: translate(-8px, 0px) rotate(-2deg); } 30% { transform: translate(8px, 0px) rotate(2deg); } 50% { transform: translate(0, 0) rotate(0); } } .animate-hit-shake { animation: hit-shake 0.4s ease-in-out; }
-                @keyframes recover-shake { 0% { transform: translate(0, 0); } 25% { transform: translate(4px, -4px); } 50% { transform: translate(-4px, 4px); } 75% { transform: translate(4px, 4px); } 100% { transform: translate(0, 0); } } .animate-recover-shake { animation: recover-shake 0.15s infinite; }
-                @keyframes poof { from { transform: translate(0, 0) scale(0.5); opacity: 1; } to { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } } .particle { animation: poof 0.4s ease-out forwards; }
+                @keyframes hit-shake { 0%, 100% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(-5px, 0); } 75% { transform: translate(5px, 0); } } 
+                .animate-hit-shake { animation: hit-shake 0.2s ease-in-out; }
+                @keyframes recover-shake { 0% { transform: scale(1.2); } 50% { transform: scale(1.3); } 100% { transform: scale(1.2); } } 
+                .animate-recover-shake { animation: recover-shake 0.1s; }
+                @keyframes cough-lunge { 0% { transform: scale(1.2) translateY(0); } 30% { transform: scale(1.1) translateY(10px); } 100% { transform: scale(1.2) translateY(0); } }
+                .animate-cough-lunge { animation: cough-lunge 0.15s ease-out; }
+                @keyframes heimlich-thrust { from { right: -150px; } to { right: 50%; transform: translateX(50%) translateY(-50%); } }
+                .particle { animation: poof 0.4s ease-out forwards; }
+                @keyframes poof { from { transform: translate(0, 0) scale(0.5); opacity: 1; } to { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } }
             `}</style>
+            
+            {/* Background */}
+            <div className={`absolute inset-0 transition-colors duration-500 bg-gray-800`}></div>
+            {gamePhase === 'choke' && !heimlichAnimation && !isExpelling && <ChokeOverlay intensity={intensity} />}
+
             {status === 'won' && <NePodavisWinScreen onContinue={handleWinContinue} character={character} />}
-            {status === 'lost' && <div className="absolute inset-0 bg-red-900/80 z-40 flex items-center justify-center text-5xl">ПОДАВИЛСЯ!</div>}
+            {status === 'lost' && <HeimlichDefeatScreen onRetry={handleLose} />}
             
             {!isInstructionModalVisible && status === 'playing' && <>
                 <MinigameHUD>
-                    <div className="w-full text-center">
-                        <div className="text-2xl mb-2">Раунд {round}/3</div>
-                        <div className="flex justify-center gap-2">
-                            {Array.from({length: roundSettings.hitsToRecover}).map((_, i) => 
-                                <div key={i} className={`w-12 h-12 text-4xl flex items-center justify-center pixel-border transition-colors duration-200 ${i < hitCount ? 'bg-red-600' : 'bg-gray-700'}`}>
-                                    ☠️
-                                </div>
-                            )}
+                    <div className="w-full flex justify-between items-start px-4">
+                        {/* Otbitost Meter */}
+                        <div className="flex flex-col items-center">
+                            <span className="text-sm text-yellow-300 font-bold mb-1">ОТБИТОСТЬ</span>
+                            <div className="text-3xl font-mono text-white border-2 border-yellow-500 bg-black/50 px-2 rounded">
+                                {Math.floor(otbitost)}
+                            </div>
                         </div>
+
+                        {/* Phase 2 Specifics */}
+                        {gamePhase === 'choke' && !isExpelling && (
+                            <div className="flex flex-col items-center animate-pulse">
+                                <span className="text-red-500 font-black text-xl">ДЕРЖИ РИТМ 100 УДАРОВ в СЕКУНДУ!</span>
+                                <div className={`text-4xl font-mono font-bold ${bpmFeedback === 'good' ? 'text-green-400' : bpmFeedback === 'bad' ? 'text-red-500' : 'text-gray-500'}`}>
+                                    {currentBPM || "--"}
+                                </div>
+                                {/* Combo Counter Display */}
+                                {comboStreak > 1 && (
+                                    <div className="text-yellow-300 font-black text-xl animate-bounce mt-1">
+                                        COMBO x{comboStreak}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        <div className="text-xl text-red-400 font-mono p-1"></div>
                     </div>
                 </MinigameHUD>
 
-                <div className="relative cursor-pointer"><PlayerHead artData={charArt} isHit={isHitVisual} isRecovering={gamePhase === 'recover'} /></div>
+                {/* Main Interaction Area */}
+                <div 
+                    className="absolute inset-0 flex items-center justify-center z-10"
+                    onClick={(e) => handleInteraction(e, 'rhythm')}
+                    onTouchStart={(e) => handleInteraction(e, 'rhythm')}
+                >
+                    <div className="relative pointer-events-none">
+                        <PlayerHead 
+                            artData={charArt} 
+                            isHit={isHitVisual} 
+                            isRecovering={gamePhase === 'choke'} 
+                            isCoughing={isCoughing || isExpelling} 
+                            hasCombo={comboStreak >= 3} 
+                        />
+                    </div>
+                </div>
+                                {/* Expulsion Animation Items */}
+                {isExpelling && expelledItems.map(item => (
+                    <div 
+                        key={item.id}
+                        className="absolute text-center z-50 pointer-events-none"
+                        style={{
+                            left: `${item.x}%`,
+                            top: `${item.y}%`,
+                            transform: `translate(-50%, -50%) scale(${item.scale}) rotate(${item.rot}deg)`,
+                            fontSize: '3rem',
+                            opacity: 1
+                        }}
+                    >
+                        {item.char}
+                    </div>
+                ))}
+
+                {/* Projectiles (Phase 1) */}
+                {gamePhase === 'collect' && projectiles.map(p => (
+                    <div 
+                        key={p.id} 
+                        className={`absolute flex items-center justify-center cursor-pointer transition-transform active:scale-90`} 
+                        style={{
+                            left: `${p.x}%`, 
+                            top: `${p.y}%`, 
+                            transform: `translate(-50%,-50%) rotate(${p.angle}deg)`,
+                            fontSize: '2.5rem',
+                            zIndex: 20
+                        }} 
+                        onClick={(e) => handleInteraction(e, 'projectile', p.id)} 
+                        onTouchStart={(e) => handleInteraction(e, 'projectile', p.id)}
+                    >
+                        {p.content}
+                    </div>
+                ))}
+
+                {/* Particles */}
+                {particles.map(p => <div key={p.id} className="particle absolute text-white text-3xl pointer-events-none z-20" style={{ left: `${p.x}%`, top: `${p.y}%`, color: p.color || 'white', '--tx': `${Math.cos(p.angle * Math.PI/180) * 60}px`, '--ty': `${Math.sin(p.angle * Math.PI/180) * 60}px` } as React.CSSProperties}>💥</div>)}
                 
-                {gamePhase === 'avoid' && projectiles.map(p => <div key={p.id} className={`absolute text-3xl cursor-pointer ${p.content === 'word' ? dadaProjectileColor : ''}`} style={{left: `${p.x}%`, top: `${p.y}%`, transform: 'translate(-50%,-50%)'}} onClick={(e) => handleProjectileClick(e, p.id)} onTouchStart={(e) => handleProjectileClick(e, p.id)}>{p.content === 'word' ? 'ДАДА' : p.content}</div>)}
-                {particles.map(p => <div key={p.id} className="particle absolute text-white text-2xl pointer-events-none" style={{ left: `${p.x}%`, top: `${p.y}%`, '--tx': `${Math.cos(p.angle) * 50}px`, '--ty': `${Math.sin(p.angle) * 50}px` } as React.CSSProperties}>*</div>)}
-                {coughParticles.map(p => <div key={p.id} className="absolute w-3 h-3 pointer-events-none z-30" style={{ left: `${p.x}%`, top: `${p.y}%`, backgroundColor: p.color, }}></div>)}
-                {gamePhase === 'recover' && (
+                {/* Feedback Text */}
+                {feedback.map(f => (
+                    <div key={f.id} className={`absolute font-bold pointer-events-none animate-[float-up_0.8s_forwards] z-30 ${f.color}`} style={{left: `${f.x}%`, top: `${f.y}%`, transform: 'translate(-50%, -50%)'}}>{f.text}</div>
+                ))}
+
+                {/* Heimlich Hand Animation */}
+                {heimlichAnimation && <HeimlichHand />}
+
+                {/* Choke Bar (Phase 2) */}
+                {gamePhase === 'choke' && !heimlichAnimation && !isExpelling && (
                     <>
-                        <div className="absolute left-10 bottom-10 h-3/4 w-12 pixel-border bg-black z-20"><div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-yellow-400 via-orange-500 to-red-600" style={{height: `${chokeLevel}%`}}></div></div>
-                        <div className="absolute bottom-10 text-center text-yellow-300 z-30 p-4 pointer-events-none"><p className="text-2xl animate-pulse">Давайте, Геймлих!</p></div>
+                        {/* Compact Choke Bar Container - Positioned at bottom */}
+                        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-1/2 h-6 z-40">
+                            
+                            {/* 1. The Visual Bar (Gradient + Border) */}
+                            <div className="w-full h-full rounded-full border-2 border-white overflow-hidden relative bg-gray-900">
+                                {/* Full Gradient Background */}
+                                <div className="absolute inset-0 w-full h-full opacity-90" style={{
+                                    background: 'linear-gradient(to right, #4ade80 0%, #facc15 50%, #ef4444 90%, #7f1d1d 100%)'
+                                }}></div>
+
+                                {/* Vertical Line inside bar (Cursor) */}
+                                <div
+                                    className="absolute top-0 bottom-0 w-1 bg-white z-20 shadow-[0_0_5px_rgba(255,255,255,0.8)] mix-blend-overlay"
+                                    style={{ 
+                                        left: `${chokeLevel}%`, 
+                                        transform: 'translateX(-50%)',
+                                        transition: 'left 0.1s linear' // Smooth movement
+                                    }}
+                                ></div>
+
+                                {/* Markers (Inside bar) */}
+                                <div className="absolute top-0 bottom-0 left-[50%] w-0.5 bg-black/50 z-10"></div>
+                                <div className="absolute top-0 bottom-0 left-[99%] w-0.5 bg-black/50 z-10"></div>
+                            </div>
+
+                            {/* 2. The Pointer (Triangle on top) - Outside the overflow-hidden div */}
+                            <div
+                                className="absolute top-[-10px] z-50 pointer-events-none"
+                                style={{
+                                    left: `${chokeLevel}%`,
+                                    transform: 'translateX(-50%)',
+                                    transition: 'left 0.1s linear'
+                                }}
+                            >
+                                {/* CSS Triangle */}
+                                <div style={{
+                                    width: 0, 
+                                    height: 0, 
+                                    borderLeft: '8px solid transparent',
+                                    borderRight: '8px solid transparent',
+                                    borderTop: '12px solid white',
+                                    filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.5))'
+                                }}></div>
+                            </div>
+
+                            {/* 3. Text Labels (Above Bar) */}
+                            <div className="absolute -top-6 left-[50%] -translate-x-1/2 text-[10px] font-bold text-green-400 drop-shadow-md whitespace-nowrap">ДА</div>
+                            <div className="absolute -top-6 left-[99%] -translate-x-1/2 text-[10px] font-bold text-red-500 drop-shadow-md whitespace-nowrap">АД</div>
+
+                        </div>
+
+                        {/* Title Below Bar */}
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-white font-bold text-sm shadow-black drop-shadow-md z-40">
+                            СТЕПЕНЬ УДУШЬЯ {Math.ceil(chokeLevel)}%
+                        </div>
                     </>
                 )}
             </>}

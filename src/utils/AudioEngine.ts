@@ -60,6 +60,10 @@ export enum SoundType {
   POWERUP,
   BOSS_ROAR,
   SPLAT,
+  
+  // Ne Podavis Specific
+  SLAP,
+  GASP,
 }
 
 export enum MusicType {
@@ -525,6 +529,24 @@ export const playSound = (type: SoundType) => {
         case SoundType.BOSS_ROAR: playNoise(1.5, 0.5, 'lowpass', 200); play(50, 1.5, 0.5, 'sawtooth'); break;
         case SoundType.SPLAT: playNoise(0.1, 0.2, 'lowpass', 600); break;
         
+        // SLAP (Sharp low noise)
+        case SoundType.SLAP: playNoise(0.1, 0.5, 'lowpass', 1000); break;
+        
+        // GASP (Rising breathable sound)
+        case SoundType.GASP:
+            playNoise(0.6, 0.3, 'bandpass', 1500);
+            const gaspOsc = ctx.createOscillator();
+            const gaspGain = ctx.createGain();
+            gaspOsc.connect(gaspGain).connect(ctx.destination);
+            gaspOsc.type = 'triangle';
+            gaspOsc.frequency.setValueAtTime(300, t);
+            gaspOsc.frequency.linearRampToValueAtTime(500, t + 0.5);
+            gaspGain.gain.setValueAtTime(0, t);
+            gaspGain.gain.linearRampToValueAtTime(0.2, t + 0.3);
+            gaspGain.gain.linearRampToValueAtTime(0, t + 0.6);
+            gaspOsc.start(t); gaspOsc.stop(t + 0.6);
+            break;
+
         // DADA ECSTASY: Updated Logic (Ticking -> Swell -> Pop)
         case SoundType.DADA_ECSTASY: {
             // 1. Ticking / Clicking (starts slow, speeds up)

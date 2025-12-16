@@ -176,14 +176,14 @@ const getSeasonalEvent = (): SeasonalEvent => {
 };
 
 const MESSAGES_BY_EVENT: Partial<Record<SeasonalEvent, string[]>> = {
-    [SeasonalEvent.NEW_YEAR]: ["Салат в помощь!", "С Новым Гадом!", "Мандарины - это ложь.", "Оливье с майонезом судьбы."],
-    [SeasonalEvent.APRIL_FOOLS]: ["Вам повестка.", "Это не шутка.", "Смех продлевает срок.", "Заполните форму 2-НДФЛ."],
-    [SeasonalEvent.HALLOWEEN]: ["Ипотека близко...", "Бу!", "Жизнь - это ужас.", "Твоя спина белая (от страха)."],
-    [SeasonalEvent.DADA_BIRTHDAY]: ["Фонтаны для купания!", "Внезапный Дада Вопрос!", "Няшность спасет мир!", "Любовь, голуби и кирпичи.", "Розовый - новый камуфляж.", "Make DADA not WAR."],
-    [SeasonalEvent.SEPTEMBER_3]: ["Я календарь...", "...переверну!", "Костры рябин горят.", "Всё не то, всё не так."],
-    [SeasonalEvent.GONDOLIER_DAY]: ["ЯМы Гондольер", "Не раскачивай лодку!", "Греби отсюда.", "Полосатый рейс.", "Венеция тонет, а мы нет."],
-    [SeasonalEvent.GLITCH_DAY]: ["ERROR 404: REALITY NOT FOUND", "undefined is not a function", "CSS is awesome", "Wake up, Neo...", "01000100 01000001", "Сбой в матрице."],
-    [SeasonalEvent.POTATO_SALVATION]: ["Слава Крахмалу!", "Вся власть драникам!", "Не чисти — так жарь!", "Bulba is Life.", "Святой Клубень следит за тобой."]
+    [SeasonalEvent.NEW_YEAR]: ["Салат доешь!", "Всего вам этого самого!", "Мандариноциду НЕТ!", "Оливье — это конструкт.", "Выйди из телевизора!"],
+    [SeasonalEvent.APRIL_FOOLS]: ["Вам повестка.", "Дошутились.", "Смех продлевает срок.", "Заполните форму Д4Д4."],
+    [SeasonalEvent.HALLOWEEN]: ["Раковые шейки.", "Налоги в порядке?", "Жизнь — это смерть.", "УЖАСТАКАКОЙ.", "С новым диктатором!"],
+    [SeasonalEvent.DADA_BIRTHDAY]: ["С праздадником!", "Кому это надо?", "ДАДА за мир!", "Ў", "Розовый - новый камуфляж.", "Make DADA not WAR."],
+    [SeasonalEvent.SEPTEMBER_3]: ["Я календарь...", "...переверну!", "Костры рябин горят.", "Всё не то, всё не так.", "Время взглянуть на фото."],
+    [SeasonalEvent.GONDOLIER_DAY]: ["ЯМы Гондольер", "Уэуэуэу!", "Симультанной Спонтанности Соприкосновение.", "Ё.", "СООБЩЕНИЕ."],
+    [SeasonalEvent.GLITCH_DAY]: ["ERROR: REALITY NOT FOUND", "undefined is not a function", "CSS is awesome", "Wake up, Neo...", "01000100 01000001", "Сбой в матрице."],
+    [SeasonalEvent.POTATO_SALVATION]: ["Слава Крахмалу!", "Вся власть драникам!", "Не чисти — так жарь!", "Bulba is Life.", "Клубень следит за тобой."]
 };
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -499,7 +499,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return;
         }
 
-        if (character === Character.KANILA && Math.random() < 0.5) {
+        if (character === Character.KANILA && Math.random() < 0.2) {
             logEvent("Anarchic Glitch! Loss becomes a win (no score).");
             playSound(SoundType.TRANSFORM_SUCCESS);
             isTransitioning.current = true;

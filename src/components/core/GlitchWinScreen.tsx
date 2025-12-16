@@ -97,7 +97,7 @@ export const GlitchWinScreen: React.FC = () => {
                 <div className="mt-8 flex flex-col sm:flex-row gap-4" style={{ animation: 'text-fade-in 1s 1.5s ease-out forwards', opacity: 0 }}>
                     {glitchWinVideoUrl && (
                         <button onClick={handlePlayVideo} className="pixel-button p-3 text-xl bg-purple-700 hover:bg-purple-800">
-                            Утраченный Фрагмент
+                            ПРЕМНОГО
                         </button>
                     )}
                     <button onClick={handleContinue} className="pixel-button p-3 text-xl bg-gray-600 hover:bg-gray-700">

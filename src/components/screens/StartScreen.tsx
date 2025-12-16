@@ -25,7 +25,7 @@ export const StartScreen: React.FC = () => {
       const w = window.innerWidth;
       // Адаптивный размер пикселя
       if (h < 800 || w < 600) setPixelSize(4);
-      else setPixelSize(5);
+      else setPixelSize(6);
     };
     handleResize(); 
     window.addEventListener('resize', handleResize);
