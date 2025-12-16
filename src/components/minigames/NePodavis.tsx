@@ -198,6 +198,7 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
     const projectileId = useRef(0);
     const particleId = useRef(0);
     const lastTapTime = useRef<number>(0);
+    const tapHistory = useRef<number[]>([]); // Rolling average buffer
     const gameAreaRef = useRef<HTMLDivElement>(null);
 
     const charArt = useMemo(() => NEPODAVIS_HEAD_ART[character || Character.KANILA], [character]);
@@ -224,6 +225,7 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
         setChokeLevel(85); // Start high!
         setProjectiles([]);
         lastTapTime.current = 0; // Reset rhythm
+        tapHistory.current = []; // Reset history
         setComboStreak(0); // Reset combo
         setFeedback(f => [...f, {id: Date.now(), text: "УДУШЬЕ!", x: 50, y: 50, color: 'text-red-600 text-4xl'}]);
     }, [gamePhase, playSound]);
@@ -316,13 +318,6 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
         }
 
         const now = Date.now();
-        const diff = now - lastTapTime.current;
-
-        // MOBILE FIX: Debounce logic to prevent double-firing
-        // If tap is registered < 100ms after the previous one, it's likely a ghost click or browser event doubling
-        if (lastTapTime.current > 0 && diff < 100) {
-            return;
-        }
         
         if (lastTapTime.current === 0) {
             // First tap just starts the timer
@@ -330,11 +325,27 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
             return;
         }
 
+        const diff = now - lastTapTime.current;
+
+        // Hard debounce for impossible human speeds (prevents machine gunning)
+        // 80ms is roughly 750 BPM, which is faster than most players can sustainably tap
+        if (diff < 80) {
+            return;
+        }
+
         lastTapTime.current = now;
         
-        // Calculate BPM based on interval
-        // Cap max BPM to prevent infinity/crazy numbers on very fast legit double taps
-        const bpm = diff > 0 ? Math.min(999, Math.round(60000 / diff)) : 0;
+        // --- Rolling Average Smoothing ---
+        // Store last 3 intervals to smooth out jitter
+        tapHistory.current.push(diff);
+        if (tapHistory.current.length > 3) {
+            tapHistory.current.shift();
+        }
+        
+        const avgDiff = tapHistory.current.reduce((a, b) => a + b, 0) / tapHistory.current.length;
+        
+        // Calculate BPM based on AVERAGE interval
+        const bpm = avgDiff > 0 ? Math.min(999, Math.round(60000 / avgDiff)) : 0;
         setCurrentBPM(bpm);
 
         // Logic: 2 clicks = 1 impact event. We calculate impact on every click based on interval from previous.
@@ -532,8 +543,11 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
     }, [status, gamePhase, settings, triggerChoke, chokeLevel, playSound, triggerHeimlich, heimlichAnimation, otbitost, charConfig, isExpelling, triggerExpulsion]), status === 'playing' && !isInstructionModalVisible);
 
     // Interaction Handler
-    const handleInteraction = (e: React.MouseEvent | React.TouchEvent, type: 'projectile' | 'rhythm', id?: number) => {
+    // Changed type to accept generic SyntheticEvent (covering both PointerEvent and MouseEvent)
+    const handleInteraction = (e: React.SyntheticEvent, type: 'projectile' | 'rhythm', id?: number) => {
+        // UNIFIED POINTER EVENT HANDLING
         e.stopPropagation();
+        
         if (status !== 'playing' || heimlichAnimation || isExpelling) return;
 
         // --- Phase 1: Deflect Items ---
@@ -629,10 +643,10 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
                 </MinigameHUD>
 
                 {/* Main Interaction Area */}
+                {/* Unified Pointer Handler: Covers both Mouse and Touch, prevents ghost clicks naturally */}
                 <div 
                     className="absolute inset-0 flex items-center justify-center z-10"
-                    onClick={(e) => handleInteraction(e, 'rhythm')}
-                    onTouchStart={(e) => handleInteraction(e, 'rhythm')}
+                    onPointerDown={(e) => handleInteraction(e, 'rhythm')}
                 >
                     <div className="relative pointer-events-none">
                         <PlayerHead 
@@ -673,8 +687,7 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
                             fontSize: '2.5rem',
                             zIndex: 20
                         }} 
-                        onClick={(e) => handleInteraction(e, 'projectile', p.id)} 
-                        onTouchStart={(e) => handleInteraction(e, 'projectile', p.id)}
+                        onPointerDown={(e) => handleInteraction(e, 'projectile', p.id)}
                     >
                         {p.content}
                     </div>
