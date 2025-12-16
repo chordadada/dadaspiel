@@ -76,6 +76,52 @@ const MINIGAME_BADGES: Record<string, string> = {
     "6-3": "🥔", // Шутер (Драник/Картошка)
 };
 
+// --- Seasonal Data & Logic ---
+type Season = 'winter' | 'spring' | 'summer' | 'autumn';
+
+const getSeason = (): Season => {
+    const month = new Date().getMonth(); // 0-11
+    if (month === 11 || month <= 1) return 'winter';
+    if (month >= 2 && month <= 4) return 'spring';
+    if (month >= 5 && month <= 7) return 'summer';
+    return 'autumn';
+};
+
+const SEASON_THEMES = {
+    winter: {
+        groundColor: '#cbd5e1', // Snow (Slate-300)
+        groundBorder: '#94a3b8', // Darker snow border
+        roadColor: '#94a3b8', // Icy road
+        grassColor: '#f8fafc', // White snow piles
+        floraColors: ['#f1f5f9', '#e2e8f0', '#cbd5e1'], // White/Grey trees
+        decorOpacity: 0.8
+    },
+    spring: {
+        groundColor: '#3f2e26', // Wet Earth
+        groundBorder: '#000',
+        roadColor: '#525252', // Asphalt
+        grassColor: '#4ade80', // Fresh Green
+        floraColors: ['#86efac', '#4ade80', '#22c55e'], // Vibrant light greens
+        decorOpacity: 0.8
+    },
+    summer: {
+        groundColor: '#2d2d2d', // Dark Earth
+        groundBorder: '#000',
+        roadColor: '#4b5563', // Grey Asphalt
+        grassColor: '#2d5a27', // Deep Green
+        floraColors: ['#1a472a', '#2d5a27', '#3a5a40'], // Dark greens
+        decorOpacity: 0.6
+    },
+    autumn: {
+        groundColor: '#271c19', // Very dark brown
+        groundBorder: '#000',
+        roadColor: '#44403c', // Brownish grey
+        grassColor: '#d97706', // Amber/Orange leaves
+        floraColors: ['#ea580c', '#ca8a04', '#b45309'], // Orange/Yellow/Brown
+        decorOpacity: 0.8
+    }
+};
+
 // --- Random Number Generator ---
 // A simple seeded random function to ensure the world looks the same for the same Profile ID
 const cyrb128 = (str: string) => {
@@ -120,6 +166,7 @@ export const CaseSelectionScreen: React.FC = () => {
   // --- State ---
   const [player, setPlayer] = useState({ x: 100, y: GROUND_LEVEL, vx: 0, vy: 0, grounded: true, facingRight: true });
   const [activeDoorId, setActiveDoorId] = useState<string | null>(null);
+  const [season] = useState<Season>(() => getSeason());
   
   // Refs
   const activeDoorIdRef = useRef<string | null>(null);
@@ -128,6 +175,8 @@ export const CaseSelectionScreen: React.FC = () => {
   
   useEffect(() => { activeDoorIdRef.current = activeDoorId; }, [activeDoorId]);
   useEffect(() => { playerRef.current = player; }, [player]);
+
+  const currentTheme = SEASON_THEMES[season];
 
   // --- World Generation ---
   const { allDoors, platforms, decorations, stopSignX } = useMemo(() => {
@@ -457,6 +506,15 @@ export const CaseSelectionScreen: React.FC = () => {
             {/* 1. Background Layer: Procedural Decorations */}
             {decorations.map(deco => {
                 const asset = BACKGROUND_ASSETS[deco.assetIndex];
+                let overrideColor = asset.color;
+                
+                // Indices 0 (Pine), 1 (Tree), 3 (Bush) are flora that changes with season
+                if ([0, 1, 3].includes(deco.assetIndex)) {
+                    // Stable random color pick based on ID
+                    const colorIndex = deco.id % currentTheme.floraColors.length;
+                    overrideColor = currentTheme.floraColors[colorIndex];
+                }
+
                 return (
                     <div 
                         key={deco.id}
@@ -467,12 +525,12 @@ export const CaseSelectionScreen: React.FC = () => {
                             width: '100px',
                             height: '100px',
                             transform: `scale(${deco.scale}) scaleX(${deco.flip ? -1 : 1})`,
-                            opacity: 0.6,
+                            opacity: currentTheme.decorOpacity,
                             zIndex: 0
                         }}
                     >
                         <svg viewBox={asset.viewBox} width="100%" height="100%" preserveAspectRatio="xMidYMax meet">
-                            <path d={asset.path} fill={asset.color} stroke={asset.stroke} strokeWidth={asset.strokeWidth || 0} />
+                            <path d={asset.path} fill={overrideColor} stroke={asset.stroke} strokeWidth={asset.strokeWidth || 0} />
                         </svg>
                     </div>
                 );
@@ -513,20 +571,42 @@ export const CaseSelectionScreen: React.FC = () => {
                         </div>
                     );
                 } else {
-                    // Standard Platform
+                    // Standard Platform (Seasonal)
                     return (
-                        <div key={`plat-${i}`} className="absolute bg-stone-800 border-t-4 border-black z-5" style={{ left: plat.x, bottom: plat.y - plat.h, width: plat.w, height: plat.h }}>
+                        <div key={`plat-${i}`} className="absolute border-t-4 z-5" 
+                             style={{ 
+                                 left: plat.x, 
+                                 bottom: plat.y - plat.h, 
+                                 width: plat.w, 
+                                 height: plat.h,
+                                 backgroundColor: currentTheme.groundColor,
+                                 borderColor: currentTheme.groundBorder
+                             }}>
                             <div className="w-full h-full opacity-30" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #000 10px, #000 20px)'}}></div>
                         </div>
                     );
                 }
             })}
 
-            {/* 4. Ground Layer */}
-            <div className="absolute left-0 w-full bg-[#2d2d2d] border-t-4 border-black z-5" style={{ height: GROUND_LEVEL, bottom: 0 }}>
-                 <div className="w-full h-4 border-b-2 border-dashed border-gray-600 mt-2"></div>
-                 {/* Grass/Decoration on ground line */}
-                 <div className="absolute -top-4 w-full h-4 bg-repeat-x opacity-50" style={{backgroundImage: 'linear-gradient(to right, transparent 50%, #2d5a27 50%)', backgroundSize: '20px 10px'}}></div>
+            {/* 4. Ground Layer (Seasonal) */}
+            <div 
+                className="absolute left-0 w-full border-t-4 z-5" 
+                style={{ 
+                    height: GROUND_LEVEL, 
+                    bottom: 0,
+                    backgroundColor: currentTheme.groundColor,
+                    borderColor: currentTheme.groundBorder
+                }}
+            >
+                 <div className="w-full h-4 border-b-2 border-dashed mt-2" style={{ borderColor: currentTheme.roadColor }}></div>
+                 {/* Seasonal Overlay on ground (Grass/Snow) */}
+                 <div 
+                    className="absolute -top-4 w-full h-4 bg-repeat-x opacity-70" 
+                    style={{
+                        backgroundImage: `linear-gradient(to right, transparent 50%, ${currentTheme.grassColor} 50%)`, 
+                        backgroundSize: '20px 10px'
+                    }}
+                ></div>
             </div>
 
             {/* 5. Doors Layer */}
@@ -573,7 +653,7 @@ export const CaseSelectionScreen: React.FC = () => {
                         style={{ left: door.x, bottom: door.y, transform: 'translateX(-50%)' }}
                         onClick={(e) => { if(isActive && unlocked) { e.stopPropagation(); handleInteract(); } }}
                     >   
-                        <div className={`mb-4 px-3 py-1 text-center bg-black/80 border-2 rounded text-white whitespace-nowrap cursor-pointer transition-all duration-200 ${isActive && unlocked ? 'border-yellow-400 text-yellow-300 animate-bounce scale-110' : 'border-gray-600 text-gray-400'}`} style={{ opacity: unlocked ? 1 : 0.5, fontSize: '10px' }}>
+                        <div className={`mb-4 px-3 py-1 text-center bg-black/80 border-2 rounded text-white whitespace-nowrap cursor-pointer transition-all duration-200 ${isActive && unlocked ? 'border-yellow-400 text-yellow-300 animate-bounce scale-110' : 'border-gray-600 text-gray-400'}`} style={{ opacity: unlocked ? 1 : 0.5, fontSize: '14px' }}>
                             {door.title}
                         </div>
                         <div className={`relative transition-all duration-300 ${isActive ? 'scale-105' : 'scale-100'} ${!unlocked ? 'opacity-50 grayscale' : ''}`} style={{ filter: unlocked ? `hue-rotate(${door.hueRotate}deg)` : 'none' }}>
