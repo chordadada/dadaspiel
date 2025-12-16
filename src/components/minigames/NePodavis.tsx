@@ -316,6 +316,13 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
         }
 
         const now = Date.now();
+        const diff = now - lastTapTime.current;
+
+        // MOBILE FIX: Debounce logic to prevent double-firing
+        // If tap is registered < 100ms after the previous one, it's likely a ghost click or browser event doubling
+        if (lastTapTime.current > 0 && diff < 100) {
+            return;
+        }
         
         if (lastTapTime.current === 0) {
             // First tap just starts the timer
@@ -323,11 +330,11 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
             return;
         }
 
-        const diff = now - lastTapTime.current;
         lastTapTime.current = now;
         
         // Calculate BPM based on interval
-        const bpm = Math.round(60000 / diff);
+        // Cap max BPM to prevent infinity/crazy numbers on very fast legit double taps
+        const bpm = diff > 0 ? Math.min(999, Math.round(60000 / diff)) : 0;
         setCurrentBPM(bpm);
 
         // Logic: 2 clicks = 1 impact event. We calculate impact on every click based on interval from previous.
@@ -372,7 +379,7 @@ export const NePodavis: React.FC<{ onWin: () => void; onLose: () => void }> = ({
             setOtbitost(o => Math.max(0, o - 1.0)); // More expensive
             setBpmFeedback('bad');
         }
-    }, [otbitost, playSound, comboStreak]);
+    }, [otbitost, playSound, comboStreak, settings.bottomMargin, settings.topMargin]);
 
     // Keyboard Listener for Spacebar
     useEffect(() => {
