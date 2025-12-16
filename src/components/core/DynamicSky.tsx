@@ -6,27 +6,82 @@ import { Character } from '../../../types';
 
 // --- Types & Constants ---
 
-// 12 minutes in milliseconds
-const CYCLE_DURATION = 12 * 60 * 1000; 
+const GAME_DAY_DURATION = 720; // 12 minutes per game day
+
+type Season = 'winter' | 'spring' | 'summer' | 'autumn';
 
 interface SkyColor {
-    time: number; // 0.0 to 1.0 (0 = midnight, 0.5 = noon)
-    top: number[]; // [r, g, b]
-    bottom: number[]; // [r, g, b]
+    time: number;
+    top: number[];
+    bottom: number[];
 }
 
-// Color Palette for the Day Cycle
-const SKY_PALETTE: SkyColor[] = [
-    { time: 0.00, top: [10, 10, 30], bottom: [20, 20, 50] },       // Night (Midnight)
-    { time: 0.20, top: [40, 30, 60], bottom: [150, 80, 50] },      // Pre-Dawn
-    { time: 0.25, top: [100, 149, 237], bottom: [255, 160, 122] }, // Dawn (Sunrise)
-    { time: 0.30, top: [135, 206, 235], bottom: [200, 240, 255] }, // Morning
-    { time: 0.50, top: [30, 144, 255], bottom: [135, 206, 250] },  // Noon
-    { time: 0.70, top: [100, 149, 237], bottom: [255, 215, 0] },   // Late Afternoon
-    { time: 0.75, top: [72, 61, 139], bottom: [255, 69, 0] },      // Sunset
-    { time: 0.80, top: [25, 25, 112], bottom: [75, 0, 130] },      // Dusk
-    { time: 1.00, top: [10, 10, 30], bottom: [20, 20, 50] },       // Night (Loop)
-];
+interface SeasonConfig {
+    palette: SkyColor[];
+    // Тип осадков теперь определяет, ЧТО падает, а не КОГДА
+    precipType: 'snow' | 'rain' | 'pollen' | 'leaves' | 'none'; 
+}
+
+// --- Seasonal Data ---
+
+const getSeason = (): Season => {
+    const month = new Date().getMonth(); // 0-11
+    if (month === 11 || month <= 1) return 'winter';
+    if (month >= 2 && month <= 4) return 'spring';
+    if (month >= 5 && month <= 7) return 'summer';
+    return 'autumn';
+};
+
+const SEASON_CONFIGS: Record<Season, SeasonConfig> = {
+    winter: {
+        precipType: 'snow',
+        palette: [
+            { time: 0.00, top: [5, 5, 20], bottom: [10, 10, 40] },         // Deep Night
+            { time: 0.30, top: [20, 20, 50], bottom: [100, 100, 130] },    // Late Sunrise (Short Day)
+            { time: 0.35, top: [180, 190, 210], bottom: [220, 230, 255] }, // Pale Morning
+            { time: 0.50, top: [100, 149, 237], bottom: [200, 220, 255] }, // Cold Noon
+            { time: 0.65, top: [100, 100, 180], bottom: [200, 150, 150] }, // Early Sunset
+            { time: 0.70, top: [40, 30, 80], bottom: [100, 50, 100] },     // Purple Dusk
+            { time: 1.00, top: [5, 5, 20], bottom: [10, 10, 40] },         // Night Loop
+        ]
+    },
+    spring: {
+        precipType: 'rain',
+        palette: [
+            { time: 0.00, top: [10, 10, 30], bottom: [20, 30, 50] },
+            { time: 0.25, top: [100, 149, 237], bottom: [255, 200, 180] }, // Pinkish Sunrise
+            { time: 0.30, top: [135, 206, 235], bottom: [200, 255, 240] }, // Fresh Morning
+            { time: 0.50, top: [70, 180, 255], bottom: [180, 240, 255] },  // Bright Noon
+            { time: 0.75, top: [70, 100, 180], bottom: [255, 180, 100] },  // Soft Sunset
+            { time: 0.80, top: [30, 30, 100], bottom: [80, 50, 120] },
+            { time: 1.00, top: [10, 10, 30], bottom: [20, 30, 50] },
+        ]
+    },
+    summer: {
+        precipType: 'pollen',
+        palette: [
+            { time: 0.00, top: [0, 0, 20], bottom: [10, 10, 30] },
+            { time: 0.20, top: [50, 50, 150], bottom: [255, 100, 50] },    // Early, Intense Sunrise
+            { time: 0.30, top: [0, 150, 255], bottom: [255, 255, 200] },   // Hot Morning
+            { time: 0.50, top: [0, 100, 255], bottom: [100, 200, 255] },   // Deep Blue Noon
+            { time: 0.80, top: [100, 50, 150], bottom: [255, 50, 0] },     // Late, Red Sunset
+            { time: 0.85, top: [50, 0, 100], bottom: [100, 0, 50] },       // Hot Night
+            { time: 1.00, top: [0, 0, 20], bottom: [10, 10, 30] },
+        ]
+    },
+    autumn: {
+        precipType: 'leaves',
+        palette: [
+            { time: 0.00, top: [10, 5, 5], bottom: [30, 10, 10] },         // Dark Warm Night
+            { time: 0.25, top: [50, 30, 50], bottom: [150, 50, 20] },      // Gloomy Sunrise
+            { time: 0.35, top: [100, 120, 150], bottom: [200, 180, 150] }, // Greyish Day
+            { time: 0.50, top: [100, 130, 160], bottom: [220, 200, 180] }, // Pale Noon
+            { time: 0.70, top: [80, 40, 100], bottom: [255, 60, 0] },      // Golden/Red Sunset
+            { time: 0.75, top: [40, 20, 60], bottom: [100, 20, 0] },       // Dramatic Dusk
+            { time: 1.00, top: [10, 5, 5], bottom: [30, 10, 10] },
+        ]
+    }
+};
 
 // Helper to interpolate colors
 const lerp = (start: number, end: number, t: number) => start + (end - start) * t;
@@ -36,42 +91,150 @@ const lerpColor = (c1: number[], c2: number[], t: number) => [
     Math.round(lerp(c1[2], c2[2], t))
 ];
 
-// --- Sub-components ---
+const getInitialLocalProgress = () => {
+    const now = new Date();
+    const totalSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    return totalSeconds / 86400;
+};
+
+// --- Components ---
+
+const Rainbow: React.FC<{ opacity: number }> = ({ opacity }) => (
+    <div 
+        className="absolute inset-0 pointer-events-none transition-opacity duration-[2000ms]" 
+        style={{ opacity }}
+    >
+        <div 
+            className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[80%] h-[50%] rounded-t-full"
+            style={{ 
+                background: "radial-gradient(circle at bottom, transparent 50%, rgba(148, 0, 211, 0.4) 55%, rgba(75, 0, 130, 0.4) 60%, rgba(0, 0, 255, 0.4) 65%, rgba(0, 255, 0, 0.4) 70%, rgba(255, 255, 0, 0.4) 75%, rgba(255, 127, 0, 0.4) 80%, rgba(255, 0, 0, 0.4) 85%, transparent 90%)",
+                filter: "blur(8px)"
+            }}
+        >
+        </div>
+    </div>
+);
+
+const Precipitation: React.FC<{ type: SeasonConfig['precipType'], intensity: number, brightness: number }> = React.memo(({ type, intensity, brightness }) => {
+    if (type === 'none' || intensity <= 0) return null;
+
+    // Use a fixed seed for consistent rendering
+    const particles = useMemo(() => Array.from({ length: 40 }).map((_, i) => {
+        const left = Math.random() * 100;
+        const delay = Math.random() * 5;
+        const duration = 2 + Math.random() * 3;
+        const size = Math.random();
+        return { id: i, left, delay, duration, size };
+    }), []);
+
+    let char = '';
+    let color = 'white';
+    let animationName = '';
+    let extraStyle = {};
+
+    switch (type) {
+        case 'snow':
+            char = '•';
+            color = 'white';
+            animationName = 'fall-snow';
+            break;
+        case 'rain':
+            char = '│';
+            color = '#aaddff';
+            animationName = 'fall-rain';
+            break;
+        case 'pollen':
+            char = '•';
+            color = '#ffeb3b';
+            animationName = 'float-pollen';
+            break;
+        case 'leaves':
+            char = '🍂';
+            color = '#d35400';
+            animationName = 'fall-leaf';
+            break;
+    }
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-10 transition-opacity duration-1000" style={{ opacity: intensity * 0.8 }}>
+            <style>{`
+                @keyframes fall-snow { from { transform: translateY(-10vh); } to { transform: translateY(110vh); } }
+                @keyframes fall-rain { from { transform: translateY(-10vh); } to { transform: translateY(110vh); } }
+                @keyframes float-pollen { 
+                    0% { transform: translateY(110vh) translateX(0); opacity: 0; } 
+                    50% { opacity: 0.8; }
+                    100% { transform: translateY(-10vh) translateX(20px); opacity: 0; } 
+                }
+                @keyframes fall-leaf { 
+                    0% { transform: translateY(-10vh) rotate(0deg) translateX(0); } 
+                    50% { transform: translateY(50vh) rotate(180deg) translateX(20px); } 
+                    100% { transform: translateY(110vh) rotate(360deg) translateX(0); } 
+                }
+            `}</style>
+            {particles.map(p => (
+                <div 
+                    key={p.id}
+                    className="absolute"
+                    style={{
+                        left: `${p.left}%`,
+                        top: -20,
+                        color: color,
+                        fontSize: type === 'leaves' ? `${10 + p.size * 10}px` : `${8 + p.size * 10}px`,
+                        animation: `${animationName} ${p.duration}s linear infinite`,
+                        animationDelay: `-${p.delay}s`,
+                        opacity: type === 'rain' ? 0.6 : 0.9,
+                        filter: type === 'pollen' ? 'blur(1px)' : 'none',
+                        ...extraStyle
+                    }}
+                >
+                    {char}
+                </div>
+            ))}
+        </div>
+    );
+});
 
 const Star: React.FC<{ style: React.CSSProperties }> = ({ style }) => (
     <div className="absolute bg-white rounded-full transition-opacity duration-1000" style={style}></div>
 );
 
-// Cloud component now accepts position directly via style, no CSS animation here
-const Cloud: React.FC<{ style: React.CSSProperties, brightness: number }> = ({ style, brightness }) => (
+const Cloud: React.FC<{ style: React.CSSProperties, brightness: number, opacity: number }> = ({ style, brightness, opacity }) => (
     <div 
-        className="absolute rounded-full bg-white transition-colors duration-1000" 
+        className="absolute rounded-full bg-white transition-all duration-1000" 
         style={{
             ...style,
-            opacity: 0.4 + (1 - brightness) * 0.3, 
+            opacity: opacity * (0.4 + (1 - brightness) * 0.3), // Opacity linked to cloud density AND brightness
             filter: `brightness(${brightness}) blur(5px)`,
             boxShadow: '0 0 20px 5px rgba(255,255,255,0.4)'
         }}
     ></div>
 );
 
-const CelestialBody: React.FC<{ type: 'sun' | 'moon', progress: number }> = ({ type, progress }) => {
-    // We only render the moon. The sun is "invisible" (behind screen/clouds) but its light cycle remains.
-    if (type === 'sun') return null;
-
+// Added stormIntensity to dim the sun/moon when overcast
+const CelestialBody: React.FC<{ type: 'sun' | 'moon', progress: number, stormIntensity: number }> = ({ type, progress, stormIntensity }) => {
     let rotation = 0;
     let isVisible = false;
 
+    // Sun Logic
+    if (type === 'sun') {
+        if (progress > 0.2 && progress < 0.8) {
+            isVisible = true;
+            const sunProgress = (progress - 0.2) / 0.6; 
+            rotation = -110 + sunProgress * 220;
+        }
+    } 
     // Moon Logic
-    let moonProgress = 0;
-    if (progress > 0.7) {
-        isVisible = true;
-        moonProgress = (progress - 0.7) / 0.6; 
-    } else if (progress < 0.3) {
-        isVisible = true;
-        moonProgress = (progress + 0.3) / 0.6; 
+    else {
+        let moonProgress = 0;
+        if (progress > 0.7) {
+            isVisible = true;
+            moonProgress = (progress - 0.7) / 0.6; 
+        } else if (progress < 0.3) {
+            isVisible = true;
+            moonProgress = (progress + 0.3) / 0.6; 
+        }
+        rotation = -110 + moonProgress * 220;
     }
-    rotation = -110 + moonProgress * 220;
 
     if (!isVisible) return null;
 
@@ -85,23 +248,29 @@ const CelestialBody: React.FC<{ type: 'sun' | 'moon', progress: number }> = ({ t
         transform: `translateX(-50%) rotate(${rotation}deg)`,
         pointerEvents: 'none',
         zIndex: 1, 
+        // Fade out celestial bodies when storm intensity is high (heavy overcast)
+        opacity: Math.max(0, 1 - stormIntensity * 0.8),
+        transition: 'opacity 1s ease-in-out'
     };
 
     return (
         <div style={bodyStyle}>
-            <div 
-                className="absolute top-[15%] left-[50%] -translate-x-1/2 rounded-full shadow-lg transition-all duration-1000"
-                style={{
-                    width: '60px',
-                    height: '60px',
-                    background: '#F4F6F0',
-                    boxShadow: '0 0 30px #FFFFFF',
-                }}
-            >
-                {/* Craters */}
-                <div className="absolute top-[20%] left-[30%] w-[20%] h-[20%] bg-gray-300 rounded-full opacity-50"></div>
-                <div className="absolute top-[60%] left-[50%] w-[15%] h-[15%] bg-gray-300 rounded-full opacity-50"></div>
-            </div>
+            {type === 'sun' ? (
+                <div className="absolute top-[10%] left-[50%] -translate-x-1/2 w-24 h-24 bg-yellow-300 rounded-full shadow-[0_0_40px_rgba(253,224,71,0.8)]"></div>
+            ) : (
+                <div 
+                    className="absolute top-[15%] left-[50%] -translate-x-1/2 rounded-full shadow-lg transition-all duration-1000"
+                    style={{
+                        width: '60px',
+                        height: '60px',
+                        background: '#F4F6F0',
+                        boxShadow: '0 0 30px #FFFFFF',
+                    }}
+                >
+                    <div className="absolute top-[20%] left-[30%] w-[20%] h-[20%] bg-gray-300 rounded-full opacity-50"></div>
+                    <div className="absolute top-[60%] left-[50%] w-[15%] h-[15%] bg-gray-300 rounded-full opacity-50"></div>
+                </div>
+            )}
         </div>
     );
 };
@@ -109,30 +278,35 @@ const CelestialBody: React.FC<{ type: 'sun' | 'moon', progress: number }> = ({ t
 export const DynamicSky: React.FC<{ showHorizon?: boolean }> = ({ showHorizon = true }) => {
     const { character } = useSession();
     
-    // Global Time State
-    const [cycleProgress, setCycleProgress] = useState(0.3);
-    const cycleRef = useRef(0.3);
+    // Season State
+    const [currentSeason] = useState<Season>(() => getSeason());
+    const seasonConfig = SEASON_CONFIGS[currentSeason];
+
+    // Time State
+    const [cycleProgress, setCycleProgress] = useState(() => getInitialLocalProgress());
     
-    // Weather & Wind
-    const [weather, setWeather] = useState(0.2); 
-    const weatherTarget = useRef(0.2);
-    const windSpeed = useRef(0.02); // Start with gentle rightward breeze
+    // Weather State
+    const [cloudDensity, setCloudDensity] = useState(0.3); // 0.0 = clear, 1.0 = overcast
+    const [isPrecipitating, setIsPrecipitating] = useState(false);
+    const [rainbowOpacity, setRainbowOpacity] = useState(0);
+    const [stormIntensity, setStormIntensity] = useState(0.0); // How "gray" the sky is
+
+    // Logic Refs
+    const targetCloudDensity = useRef(0.3);
+    const windSpeed = useRef(0.02);
     const windTarget = useRef(0.02);
 
-    // Cloud Data (Mutable Refs for performance in game loop)
     const cloudsRef = useRef(Array.from({ length: 15 }).map((_, i) => ({
         id: i,
-        // Start spread out, but within visible range initially + buffers
         x: Math.random() * 140 - 20, 
         y: Math.random() * 60,
         width: 80 + Math.random() * 150,
         height: 40 + Math.random() * 60,
-        speedFactor: 0.5 + Math.random() * 1.0, // Individual variance
+        speedFactor: 0.5 + Math.random() * 1.0,
     })));
     
     const [renderClouds, setRenderClouds] = useState(cloudsRef.current);
 
-    // Stars
     const stars = useMemo(() => Array.from({ length: 50 }).map((_, i) => ({
         id: i,
         style: {
@@ -146,55 +320,79 @@ export const DynamicSky: React.FC<{ showHorizon?: boolean }> = ({ showHorizon = 
 
     // Animation Loop
     useGameLoop(useCallback((rawDt) => {
-        // CAP DELTA TIME: prevent huge jumps on first frame or tab switch
         const dt = Math.min(rawDt, 50); 
+        const dtSec = dt / 1000;
 
-        // 1. Update Time
-        const dtProgress = dt / CYCLE_DURATION;
-        cycleRef.current = (cycleRef.current + dtProgress) % 1;
-        setCycleProgress(cycleRef.current);
+        // 1. Advance Time
+        const progressIncrement = dtSec / GAME_DAY_DURATION;
+        setCycleProgress(prev => (prev + progressIncrement) % 1.0);
 
-        // 2. Update Weather (Random walk)
-        if (Math.random() < 0.005) weatherTarget.current = Math.random();
-        setWeather(w => w + (weatherTarget.current - w) * 0.005);
+        // 2. Update Cloud Density (Random Walk)
+        if (Math.random() < 0.005) {
+            targetCloudDensity.current = Math.random();
+        }
+        setCloudDensity(c => c + (targetCloudDensity.current - c) * 0.005);
 
-        // 3. Update Wind (Smooth random walk)
+        // 3. Precipitation Logic
+        if (isPrecipitating) {
+            // Stop conditions: Not enough clouds
+            if (cloudDensity < 0.25) {
+                setIsPrecipitating(false);
+                
+                // RAINBOW TRIGGER: Rain stopped, daytime, spring/summer
+                const isDay = cycleProgress > 0.2 && cycleProgress < 0.8;
+                const canRainbow = currentSeason === 'spring' || currentSeason === 'summer';
+                if (isDay && canRainbow && Math.random() < 0.8) {
+                    setRainbowOpacity(1.0);
+                }
+            }
+        } else {
+            // Start conditions: Chance increases with cloud density
+            // At 0.2 density, chance is 0. At 1.0 density, chance is high.
+            if (cloudDensity > 0.3) {
+                const chance = (cloudDensity - 0.3) * 0.001;
+                if (Math.random() < chance) {
+                    setIsPrecipitating(true);
+                }
+            }
+        }
+
+        // 4. Update Storm Intensity (Grayness)
+        // If precipitating, storm intensity goes up quickly. Else follows cloud density loosely.
+        const targetStorm = isPrecipitating ? 0.7 + (cloudDensity * 0.3) : cloudDensity * 0.3;
+        setStormIntensity(s => s + (targetStorm - s) * 0.01);
+
+        // 5. Update Rainbow (Fade out)
+        setRainbowOpacity(op => Math.max(0, op - 0.0005));
+
+        // 6. Update Wind
         if (Math.random() < 0.005) {
             windTarget.current = (Math.random() - 0.5) * 0.3;
         }
         windSpeed.current += (windTarget.current - windSpeed.current) * 0.005;
 
-        // 4. Update Clouds
-        const dtSec = dt / 1000;
+        // 7. Update Clouds Position
         cloudsRef.current.forEach(c => {
-            // Move based on wind
             c.x += windSpeed.current * c.speedFactor * dtSec * 60; 
-            
-            // Wrap around smoothly with LARGE buffer.
-            // Using -50% and +110% ensures even wide clouds are fully off-screen before warping.
-            // If moving right (speed > 0): Wait until x > 110 (off right), warp to -50 (far left).
-            // If moving left (speed < 0): Wait until x < -50 (off left), warp to 110 (far right).
-            
             if (c.x > 110) c.x = -50;
             if (c.x < -50) c.x = 110;
         });
-        
-        // Trigger render
         setRenderClouds([...cloudsRef.current]);
 
-    }, []), true);
+    }, [currentSeason, isPrecipitating, cloudDensity, cycleProgress]), true);
 
     // Calculate Global Colors
     const { topColor, bottomColor, brightness, starOpacity, themeFilter, overlayColor } = useMemo(() => {
         const t = cycleProgress;
+        const palette = seasonConfig.palette;
         
-        let startColor = SKY_PALETTE[0];
-        let endColor = SKY_PALETTE[0];
+        let startColor = palette[0];
+        let endColor = palette[0];
         
-        for (let i = 0; i < SKY_PALETTE.length - 1; i++) {
-            if (t >= SKY_PALETTE[i].time && t < SKY_PALETTE[i+1].time) {
-                startColor = SKY_PALETTE[i];
-                endColor = SKY_PALETTE[i+1];
+        for (let i = 0; i < palette.length - 1; i++) {
+            if (t >= palette[i].time && t < palette[i+1].time) {
+                startColor = palette[i];
+                endColor = palette[i+1];
                 break;
             }
         }
@@ -205,14 +403,14 @@ export const DynamicSky: React.FC<{ showHorizon?: boolean }> = ({ showHorizon = 
         let rgbTop = lerpColor(startColor.top, endColor.top, localT);
         let rgbBottom = lerpColor(startColor.bottom, endColor.bottom, localT);
 
-        // Weather Effect (Graying out)
-        const grayFactor = weather * 0.8;
+        // Storm/Weather Effect (Graying out)
+        const grayFactor = stormIntensity;
         const toGray = (rgb: number[]) => {
             const avg = (rgb[0] + rgb[1] + rgb[2]) / 3;
             return [
-                lerp(rgb[0], avg, grayFactor) * (1 - weather * 0.4),
-                lerp(rgb[1], avg, grayFactor) * (1 - weather * 0.4),
-                lerp(rgb[2], avg, grayFactor) * (1 - weather * 0.4)
+                lerp(rgb[0], avg, grayFactor) * (1 - stormIntensity * 0.3),
+                lerp(rgb[1], avg, grayFactor) * (1 - stormIntensity * 0.3),
+                lerp(rgb[2], avg, grayFactor) * (1 - stormIntensity * 0.3)
             ];
         };
 
@@ -224,14 +422,11 @@ export const DynamicSky: React.FC<{ showHorizon?: boolean }> = ({ showHorizon = 
         let overlay = 'transparent';
 
         if (character === Character.SEXISM) {
-            // Expressionism: High saturation, contrast, warm shift
             filter = 'contrast(1.2) saturate(1.8) hue-rotate(-10deg)';
-            // Add a subtle colored overlay to tints shadows
             overlay = 'rgba(255, 100, 0, 0.1)'; 
         } else if (character === Character.BLACK_PLAYER) {
-            // Void/Glitch: Desaturated, High Contrast, Dark
             filter = 'grayscale(100%) contrast(1.5) brightness(0.7)';
-            overlay = 'rgba(20, 0, 0, 0.4)'; // Dark red tint
+            overlay = 'rgba(20, 0, 0, 0.4)'; 
         }
 
         // Star visibility
@@ -240,26 +435,25 @@ export const DynamicSky: React.FC<{ showHorizon?: boolean }> = ({ showHorizon = 
         else if (t > 0.7 && t <= 0.8) baseStarVis = (t - 0.7) * 10;
         else if (t >= 0.2 && t < 0.3) baseStarVis = 1 - (t - 0.2) * 10;
         
-        const starOp = Math.max(0, baseStarVis * (1 - weather));
+        // Stars are hidden by clouds/storm
+        const starOp = Math.max(0, baseStarVis * (1 - cloudDensity * 0.8));
 
         return {
             topColor: `rgb(${rgbTop.join(',')})`,
             bottomColor: `rgb(${rgbBottom.join(',')})`,
-            brightness: 1 - (weather * 0.5),
+            brightness: 1 - (stormIntensity * 0.5),
             starOpacity: starOp,
             themeFilter: filter,
             overlayColor: overlay
         };
-    }, [cycleProgress, weather, character]);
+    }, [cycleProgress, stormIntensity, cloudDensity, character, seasonConfig]);
 
     return (
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-            {/* Main Sky Container with Character Filter applied */}
+            {/* Main Sky Container */}
             <div 
                 className="absolute inset-0 transition-all duration-1000"
                 style={{ 
-                    // Gradient uses calculated bottomColor. 
-                    // We don't flatten it for showHorizon=false, we just don't render the haze div.
                     background: `linear-gradient(to bottom, ${topColor}, ${bottomColor})`,
                     filter: themeFilter
                 }}
@@ -269,11 +463,14 @@ export const DynamicSky: React.FC<{ showHorizon?: boolean }> = ({ showHorizon = 
                     {stars.map(s => <Star key={s.id} style={s.style} />)}
                 </div>
 
-                {/* Celestial Bodies - Sun is now invisible (removed), Moon remains */}
-                <CelestialBody type="sun" progress={cycleProgress} />
-                <CelestialBody type="moon" progress={cycleProgress} />
+                {/* Celestial Bodies */}
+                <CelestialBody type="sun" progress={cycleProgress} stormIntensity={stormIntensity} />
+                <CelestialBody type="moon" progress={cycleProgress} stormIntensity={stormIntensity} />
 
-                {/* Clouds */}
+                {/* Rainbow - Behind clouds, front of sky */}
+                <Rainbow opacity={rainbowOpacity} />
+
+                {/* Clouds - Opacity controlled by cloudDensity */}
                 {renderClouds.map(c => (
                     <div 
                         key={c.id} 
@@ -285,20 +482,23 @@ export const DynamicSky: React.FC<{ showHorizon?: boolean }> = ({ showHorizon = 
                             height: `${c.height}px`,
                         }}
                     >
-                        <Cloud style={{width: '100%', height: '100%'}} brightness={brightness} />
+                        <Cloud style={{width: '100%', height: '100%'}} brightness={brightness} opacity={cloudDensity} />
                     </div>
                 ))}
+                
+                {/* Precipitation */}
+                <Precipitation type={seasonConfig.precipType} brightness={brightness} intensity={isPrecipitating ? 1 : 0} />
 
-                {/* Horizon Haze - Only shown if requested */}
+                {/* Horizon Haze */}
                 {showHorizon && (
                     <div 
                         className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"
-                        style={{ opacity: 0.5 + weather * 0.5 }}
+                        style={{ opacity: 0.5 + stormIntensity * 0.5 }}
                     ></div>
                 )}
             </div>
 
-            {/* Tint Overlay for Character Theme (sits on top of everything) */}
+            {/* Tint Overlay */}
             <div className="absolute inset-0 pointer-events-none transition-colors duration-1000" style={{ backgroundColor: overlayColor }}></div>
         </div>
     );
