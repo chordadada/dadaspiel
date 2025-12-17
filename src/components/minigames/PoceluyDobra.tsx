@@ -79,17 +79,17 @@ export const PoceluyDobraWinScreen: React.FC<{ onContinue: () => void; character
     };
 
     let titleText = "ВЫ УСТОЯЛИ!";
-    let subText = "ИММУНИТЕТ К ДОБРУ ПОВЫШЕН";
+    let subText = "ИММУНИТЕТ К ДОБРУ ПОВЫШЕН.";
 
     if (character === Character.KANILA) {
         titleText = "КРИНЖ ОТБИТ!";
-        subText = "УРОВЕНЬ САРКАЗМА: 100%";
+        subText = "УРОВЕНЬ САРКАЗМА: 100%.";
     } else if (character === Character.SEXISM) {
         titleText = "ДЕКОНСТРУКЦИЯ!";
-        subText = "РОМАНТИКА ПОВЕРЖЕНА ЛОГИКОЙ";
+        subText = "РОМАНТИК СЕКУЛЯРИЗОВАН СУКЦЕССИВНО.";
     } else if (character === Character.BLACK_PLAYER) {
-        titleText = "ДОБРО АННИГИЛИРОВАНО";
-        subText = "ЭМОЦИОНАЛЬНЫЙ ФОН: НУЛЕВОЙ";
+        titleText = "ДОБРО АННИГИЛИРОВАНО!";
+        subText = "ЭМОЦИОНАЛЬНЫЙ ФОН: НУЛЕВОЙ.";
     }
 
     return (
@@ -123,10 +123,10 @@ export const PoceluyDobraWinScreen: React.FC<{ onContinue: () => void; character
                     className="w-96 h-56 bg-fuchsia-300 p-2 pixel-border flex flex-col items-center justify-around text-black transform rotate-[-3deg] animate-[fly-in_1s_cubic-bezier(.17,.67,.73,1.34)_0.5s_backwards] cursor-pointer hover:scale-105 transition-transform z-20" 
                     style={{textShadow: 'none'}}
                 >
-                    <h3 className="text-2xl font-bold tracking-widest">— ПРОХОДКА —</h3>
+                    <h3 className="text-2xl font-bold tracking-widest">— БЕНЕФИСТ —</h3>
                     <div className="my-2 text-center">
-                        <p className="text-4xl font-bold">ГЕЙ-ОРГИЯ</p>
-                        <p className="text-lg">(добра)</p>
+                        <p className="text-4xl font-bold">ГЕЙОРГИЯ ДОБРА</p>
+                        <p className="text-lg">в клубе "Клубень"</p>
                     </div>
                     <p className="text-sm">*предъявителю сего*</p>
                 </div>
@@ -167,7 +167,7 @@ export const PoceluyDobraLoseScreen: React.FC<{ onRetry: () => void; character: 
         loseDesc = "СЛИШКОМ. МНОГО. КРИНЖА.";
     } else if (character === Character.SEXISM) {
         loseTitle = "ЭСТЕТИЧЕСКИЙ КОЛЛАПС";
-        loseDesc = "ПОШЛОСТЬ ЗАДОБРИЛА ВКУС.";
+        loseDesc = "ПОСТШАНСОН ПОБЕДИЛ ЦИНИЗМ.";
     } else if (character === Character.BLACK_PLAYER) {
         loseTitle = "СИСТЕМА ЗАРАЖЕНА";
         loseDesc = "КРИТИЧЕСКИЙ УРОВЕНЬ ДОБРА.";
@@ -201,13 +201,17 @@ export const PoceluyDobraLoseScreen: React.FC<{ onRetry: () => void; character: 
                 </div>
             ))}
 
-            <div className="z-10 text-center p-6 bg-black/70 border-4 border-pink-500 rounded-xl backdrop-blur-md animate-[bounce_1s_infinite] max-w-2xl mx-4">
-                <h2 className="text-4xl md:text-6xl font-black text-pink-300 mb-4">{loseTitle}</h2>
-                <p className="text-xl text-white font-bold">{loseDesc}</p>
+            {/* Текстовая плашка (Исправлена центровка и перенос) */}
+            <div className="z-10 flex flex-col items-center justify-center text-center p-6 bg-black/80 border-4 border-pink-500 rounded-xl backdrop-blur-md animate-[bounce_1s_infinite] max-w-xl mx-4 break-words shadow-2xl">
+                <h2 className="text-3xl md:text-5xl font-black text-pink-300 mb-4 leading-tight">
+                    {loseTitle}
+                </h2>
+                <p className="text-lg md:text-xl text-white font-bold leading-relaxed">
+                    {loseDesc}
+                </p>
             </div>
 
             <div className="absolute bottom-8 z-50 opacity-0 animate-[fadeIn_2s_1s_forwards]">
-                 {/* This just waits for the main game loop to trigger actual loss logic via onLose */}
                  <p className="text-white text-sm animate-pulse">Сопротивление бесполезно...</p>
             </div>
         </div>
@@ -290,8 +294,8 @@ export const PoceluyDobra: React.FC<{ onWin: () => void; onLose: () => void; isS
     const charArt = useMemo(() => CHARACTER_ART_MAP[character || Character.KANILA], [character]);
 
     const DOBRO_PHRASES = [
-        "ЭВРИСЫНСГОНАБИГУТ!", "БАЛЬЗАКОВСКИЙ ВОЗРАСТ!", "ЗАЛОЖНИКИ СТРАННОГО КРУГА!", "СЕГОДНЯ СНОВА НА РАБОТУ НЕ ПОЙДУУУУ!", "ЖИТЬ КРАСИВО И ОПАСНО!",
-        "ПОТОМУ ЧТО ТЫ ЖЕНЩИНА!", "ВОТ ТАК СУДЬБА НАС СВЕЛА!", "ДРУЖОК-КОРЕШОК!", "УМА НЕ ПРИЛОЖУ, ПРИЧЁМ ЗДЕСЬ Я!", "ТЫ НАУЧИШЬСЯ БЕЗ ЛЮБВИ!", "СМЕРТЬ — ЭТО ПРОСТО ДЫМ!", "СУДЬБА ЗАШЛА НА НОВЫЙ КРУГ"
+        "ЭВРИСЫНСГОНАБИГУТ!", "БАЛЬЗАКОВСКИЙ ВОЗРАСТ!", "ЗАЛОЖНИКИ СТРАННОГО КРУГА!", "СЕГОДНЯ СНОВА НА РАБОТУ НЕ ПОЙДУУУУ!", "ЖИТЬ КРАСИВО И ОПАСНО!", "ЖИЗНЬ — ЭТО ПРОСТО СОН!", "ЭТО — НИ СИНИЦА, НИ ЦЕСАРКА!",
+        "ПОТОМУ ЧТО ТЫ ЖЕНЩИНА!", "ВОТ ТАК СУДЬБА НАС СВЕЛА!", "ДРУЖОК-КОРЕШОК!", "УМА НЕ ПРИЛОЖУ, ПРИЧЁМ ЗДЕСЬ Я!", "ТЫ НАУЧИШЬСЯ БЕЗ ЛЮБВИ!", "СМЕРТЬ — ЭТО ПРОСТО ДЫМ!", "СУДЬБА ЗАШЛА НА НОВЫЙ КРУГ!"
     ];
 
     const settings = useMemo(() => {
@@ -458,7 +462,7 @@ export const PoceluyDobra: React.FC<{ onWin: () => void; onLose: () => void; isS
 
                 // --- SPAWN TAUNT ---
                 if (Math.random() < 0.4) {
-                    spawnTaunt(DOBRO_X - 10, dobroY - 10);
+                    spawnTaunt(DOBRO_X - 20, dobroY - 15);
                 }
             }
         }
@@ -552,7 +556,7 @@ export const PoceluyDobra: React.FC<{ onWin: () => void; onLose: () => void; isS
                 <MinigameHUD>
                     <div className="w-full flex justify-between items-center px-8 font-bold text-xl" style={{textShadow: '2px 2px 0 #000'}}>
                         <div className="flex flex-col items-start w-1/3">
-                            <span className="text-blue-300">ЭГО</span>
+                            <span className="text-blue-300">БИОСУЩЕСТВО</span>
                             <div className="w-full h-4 bg-gray-800 border-2 border-white">
                                 <div className="h-full bg-blue-500 transition-all duration-200" style={{width: `${Math.max(0, scores.player)}%`}}></div>
                             </div>
