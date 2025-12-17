@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { GameScreen, Character, SeasonalEvent } from './types';
 import { GameProvider, useNavigation, useSession, useProfile, useSettings } from './src/context/GameContext';
@@ -314,6 +313,11 @@ const App: React.FC = () => {
     const InstructionContentComponent = currentMinigame ? instructionData[currentMinigame.id]?.content : WelcomeInstructionContent;
     const instructionTitle = currentMinigame ? instructionData[currentMinigame.id]?.title : "Добро пожаловать в ДАДАШПИЛЬ!";
 
+    // Apply global style overrides for certain events (like April Fools) only if enabled and NOT in a minigame
+    const containerStyle: React.CSSProperties = (seasonalAnimationsEnabled && seasonalEvent === SeasonalEvent.APRIL_FOOLS && tutorialStep === TutorialStep.NONE && screen !== GameScreen.MINIGAME_PLAY)
+        ? { filter: 'grayscale(100%)', fontFamily: 'Arial, sans-serif' } 
+        : {};
+
     const renderScreen = () => {
         switch (screen) {
             case GameScreen.WARNING:
@@ -378,11 +382,6 @@ const App: React.FC = () => {
         }
     };
 
-    // Apply global style overrides for certain events (like April Fools) only if enabled
-    const containerStyle: React.CSSProperties = (seasonalAnimationsEnabled && seasonalEvent === SeasonalEvent.APRIL_FOOLS && tutorialStep === TutorialStep.NONE)
-        ? { filter: 'grayscale(100%)', fontFamily: 'Arial, sans-serif' } 
-        : {};
-
     return (
         <GameWrapper>
             <div style={containerStyle} className="w-full h-full relative">
@@ -400,8 +399,8 @@ const App: React.FC = () => {
                     />
                 )}
                 
-                {/* Ensure Holiday effects don't start before onboarding is complete */}
-                {tutorialStep === TutorialStep.NONE && <SeasonalOverlay />}
+                {/* Seasonal effects restricted to menu screens only */}
+                {tutorialStep === TutorialStep.NONE && screen !== GameScreen.MINIGAME_PLAY && <SeasonalOverlay />}
                 
                 {isPaused && <PauseOverlay onResume={() => {
                     playSound(SoundType.GENERIC_CLICK); 

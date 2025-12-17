@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSession, useProfile, useSettings, useNavigation } from '../../context/GameContext';
 import { SoundType } from '../../utils/AudioEngine';
 import { PixelArt } from '../core/PixelArt';
 import { CHARACTER_ART_MAP, PIXEL_ART_PALETTE } from '../../../characterArt';
-import { DOOR_ART_MAP, STOP_SIGN_ART, BACKGROUND_ASSETS, PLATFORM_ASSETS, BISON_SILHOUETTE, LIBRARY_SILHOUETTE, STORK_SILHOUETTE, TRACTOR_SILHOUETTE } from '../../miscArt';
+import { DOOR_ART_MAP, STOP_SIGN_ART, BACKGROUND_ASSETS, PLATFORM_ASSETS, BISON_SILHOUETTE, LIBRARY_SILHOUETTE, STORK_SILHOUETTE, TRACTOR_SILHOUETTE, SNOWMAN_ART, XMAS_TREE_DECORATED_ART } from '../../miscArt';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { Character, SeasonalEvent } from '../../../types';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -43,6 +42,8 @@ interface BackgroundDecoration {
     scale: number;
     assetIndex: number;
     flip: boolean;
+    isSnowman?: boolean;
+    isXmasTree?: boolean;
 }
 
 // World Settings
@@ -56,6 +57,8 @@ const EXTENDED_PALETTE = {
     R: '#8b0000', // Dark Red
     M: '#4a044e', // Purple/Void
     S: '#777777', // Silver/Pole
+    G: '#1a472a', // Green for Tree
+    B: '#0077be', // Blue for Tree
 };
 
 // --- Unique Badges for Minigames ---
@@ -123,7 +126,6 @@ const SEASON_THEMES = {
 };
 
 // --- Random Number Generator ---
-// A simple seeded random function to ensure the world looks the same for the same Profile ID
 const cyrb128 = (str: string) => {
     let h1 = 1779033703, h2 = 3144134277,
         h3 = 1013904242, h4 = 2773480762;
@@ -158,7 +160,7 @@ const sfc32 = (a: number, b: number, c: number, d: number) => {
 export const CaseSelectionScreen: React.FC = () => {
   const { character } = useSession();
   const { activeProfile, dynamicCases } = useProfile();
-  const { playSound, seasonalEvent } = useSettings();
+  const { playSound, seasonalEvent, seasonalAnimationsEnabled } = useSettings();
   const { jumpToMinigame } = useNavigation();
   const containerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -177,10 +179,10 @@ export const CaseSelectionScreen: React.FC = () => {
   useEffect(() => { playerRef.current = player; }, [player]);
 
   const currentTheme = SEASON_THEMES[season];
+  const isNewYear = seasonalAnimationsEnabled && seasonalEvent === SeasonalEvent.NEW_YEAR;
 
   // --- World Generation ---
   const { allDoors, platforms, decorations, stopSignX } = useMemo(() => {
-      // 1. Setup PRNG based on Profile ID
       const seedStr = activeProfile ? activeProfile.id : 'default';
       const seed = cyrb128(seedStr);
       const rand = sfc32(seed[0], seed[1], seed[2], seed[3]);
@@ -189,34 +191,40 @@ export const CaseSelectionScreen: React.FC = () => {
       const plats: Platform[] = [];
       const decos: BackgroundDecoration[] = [];
       
-      // 2. Generate Background Decorations (Trees, Bushes)
-      // Distribute them across the world width
       for (let x = 0; x < WORLD_WIDTH; x += 50 + rand() * 150) {
           const assetIndex = Math.floor(rand() * BACKGROUND_ASSETS.length);
           const scale = 0.8 + rand() * 1.5;
-          // Place mainly on ground, but some floating if it's an "eye stalk" or weird thing
           const y = GROUND_LEVEL + (rand() * 20); 
           
+          let isSnowman = false;
+          let isXmasTree = false;
+
+          // Replace some assets with seasonal ones during New Year
+          if (isNewYear) {
+              const seasonalRand = rand();
+              if (seasonalRand < 0.1) isSnowman = true;
+              else if (seasonalRand < 0.2) isXmasTree = true;
+          }
+
           decos.push({
               id: x,
               x: x,
               y: y,
-              scale: scale,
+              scale: isSnowman || isXmasTree ? 2.0 : scale,
               assetIndex: assetIndex,
-              flip: rand() > 0.5
+              flip: rand() > 0.5,
+              isSnowman,
+              isXmasTree
           });
       }
 
-      // 3. Generate Level Structure
       let currentX = 300;
-      let calculatedStopSignX = WORLD_WIDTH - 200; // Default at end
+      let calculatedStopSignX = WORLD_WIDTH - 200; 
       let foundStop = false;
 
       dynamicCases.forEach((c) => {
           c.minigames.forEach((mg, index) => {
-              // Особая логика для 3 сентября (3-2)
               if (mg.id === '3-2') {
-                  // Wormhole high above start (Lowered to y: 350 for better accessibility)
                   doors.push({
                       id: mg.id,
                       caseId: c.id,
@@ -229,7 +237,6 @@ export const CaseSelectionScreen: React.FC = () => {
                   return;
               }
 
-              // Обычные двери
               const isElevated = index % 2 !== 0; 
               const y = isElevated ? 220 : GROUND_LEVEL;
               
@@ -239,25 +246,22 @@ export const CaseSelectionScreen: React.FC = () => {
                   title: mg.name,
                   x: currentX,
                   y: y,
-                  artId: c.id, // Direct mapping: Case 1 -> Door 1
+                  artId: c.id, 
                   hueRotate: 0
               });
 
-              // Если дверь поднята, нужна платформа (стандартная)
               if (isElevated) {
                   plats.push({ x: currentX - 60, y: y, w: 120, h: 20, type: 'standard' });
               }
 
-              // --- MIDDLE TIER GENERATION ---
-              // Add a random "Art Platform" in the gap between this door and the next position
               if (rand() > 0.3) {
-                  const midX = currentX + 150; // Halfway to next step
-                  const midY = 150 + rand() * 50; // Middle height
+                  const midX = currentX + 150; 
+                  const midY = 150 + rand() * 50; 
                   const artIdx = Math.floor(rand() * PLATFORM_ASSETS.length);
                   plats.push({
                       x: midX,
                       y: midY,
-                      w: 60, // Fixed visual width for art platforms
+                      w: 60, 
                       h: 20,
                       type: 'art',
                       artAsset: PLATFORM_ASSETS[artIdx]
@@ -267,69 +271,53 @@ export const CaseSelectionScreen: React.FC = () => {
               currentX += 300; 
           });
           
-          // Stop Sign Logic:
-          // Check if this case is NOT completed. If so, place stop sign after this case.
           if (activeProfile && !foundStop) {
               const progress = activeProfile.progress[c.id] || 0;
-              // If not fully completed, this is the current active case.
-              // Stop sign prevents moving past it to the NEXT case.
               if (progress < c.minigames.length) {
-                  calculatedStopSignX = currentX - 50; // Place shortly after the last door of this case
+                  calculatedStopSignX = currentX - 50; 
                   foundStop = true;
               }
           }
 
-          currentX += 150; // Gap between cases
+          currentX += 150; 
       });
 
-      // Parkour platforms for Wormhole (Standard style to look sturdy)
       plats.push({ x: 1900, y: 250, w: 100, h: 20, type: 'standard' });
       plats.push({ x: 2400, y: 300, w: 100, h: 20, type: 'standard' });
       
       return { allDoors: doors, platforms: plats, decorations: decos, stopSignX: calculatedStopSignX };
-  }, [dynamicCases, activeProfile]);
+  }, [dynamicCases, activeProfile, isNewYear]);
 
   // --- Initial Player Position ---
   useEffect(() => {
-      // Find the first door that corresponds to the current progression and set player near it.
-      // This happens only once on mount.
       if (allDoors.length > 0 && activeProfile) {
-          // Find the first door that is "current" (unlocked but maybe not completed, or just completed)
-          // We can iterate through doors.
           let targetDoorX = 100;
           let foundTarget = false;
 
           for (const door of allDoors) {
-              if (door.id === '3-2') continue; // Skip wormhole for spawn logic
+              if (door.id === '3-2') continue; 
               
-              // Get completion status of this specific minigame
               const parentCase = dynamicCases.find(c => c.minigames.some(m => m.id === door.id));
               if (parentCase) {
                   const idx = parentCase.minigames.findIndex(m => m.id === door.id);
                   const progress = activeProfile.progress[parentCase.id] || 0;
                   
-                  // If this is the first uncompleted game, spawn here
                   if (progress === idx) {
                       targetDoorX = door.x;
                       foundTarget = true;
                       break;
                   }
-                  // If we are at the end of a case (progress == length) and this is the last game,
-                  // we might want to spawn near the next case, but the loop will handle the next case's first game.
               }
           }
           
-          // If all games in a case are done, spawn at the *next* available game (handled by loop above)
-          // If ALL games in ALL cases are done, spawn near the end or last door.
           if (!foundTarget) {
-              // Find last non-wormhole door
               const lastDoor = [...allDoors].reverse().find(d => d.id !== '3-2');
               if (lastDoor) targetDoorX = lastDoor.x;
           }
 
           setPlayer(p => ({ ...p, x: Math.max(100, targetDoorX - 100) }));
       }
-  }, []); // Run ONCE on mount
+  }, []); 
 
   // --- Helpers ---
   const isMinigameUnlocked = (targetId: string) => {
@@ -415,8 +403,6 @@ export const CaseSelectionScreen: React.FC = () => {
           let newY = p.y + newVy * deltaTime;
           let newGrounded = false;
 
-          // World Boundaries (Left wall and Stop Sign)
-          // Stop sign blocks rightward movement
           newX = Math.max(50, Math.min(newX, stopSignX - 30)); 
 
           if (newY <= GROUND_LEVEL) {
@@ -425,10 +411,8 @@ export const CaseSelectionScreen: React.FC = () => {
               newGrounded = true;
           }
 
-          // Platform Collisions
           if (newVy <= 0) {
               for (const plat of platforms) {
-                  // Adjusted collision box:
                   const hitLeft = plat.type === 'art' ? plat.x - plat.w/2 : plat.x;
                   const hitRight = plat.type === 'art' ? plat.x + plat.w/2 : plat.x + plat.w;
 
@@ -451,7 +435,6 @@ export const CaseSelectionScreen: React.FC = () => {
           };
       });
 
-      // Door Proximity
       let foundDoor = null;
       for (const door of allDoors) {
           const p = playerRef.current;
@@ -482,7 +465,6 @@ export const CaseSelectionScreen: React.FC = () => {
   const screenWidth = containerRef.current ? containerRef.current.clientWidth : 800;
   const cameraX = Math.max(0, Math.min(WORLD_WIDTH - screenWidth, player.x - screenWidth / 2));
 
-  // Landmarks parallax (Distant)
   const landmarks = [
       { id: 1, x: 200, y: 120, art: BISON_SILHOUETTE, scale: 6, opacity: 0.3 },
       { id: 2, x: 1500, y: 100, art: LIBRARY_SILHOUETTE, scale: 8, opacity: 0.2 },
@@ -493,7 +475,6 @@ export const CaseSelectionScreen: React.FC = () => {
   return (
     <div className="w-full h-full relative overflow-hidden font-mono" ref={containerRef}>
         
-        {/* Background Sky Layer (Static/Parallax base) */}
         <DynamicSky />
 
         <div 
@@ -508,11 +489,25 @@ export const CaseSelectionScreen: React.FC = () => {
                 const asset = BACKGROUND_ASSETS[deco.assetIndex];
                 let overrideColor = asset.color;
                 
-                // Indices 0 (Pine), 1 (Tree), 3 (Bush) are flora that changes with season
                 if ([0, 1, 3].includes(deco.assetIndex)) {
-                    // Stable random color pick based on ID
                     const colorIndex = deco.id % currentTheme.floraColors.length;
                     overrideColor = currentTheme.floraColors[colorIndex];
+                }
+
+                // Render special New Year assets
+                if (deco.isSnowman) {
+                    return (
+                        <div key={`sn-${deco.id}`} className="absolute z-0 pointer-events-none" style={{ left: deco.x, bottom: deco.y, transform: `scale(${deco.scale}) scaleX(${deco.flip ? -1 : 1})` }}>
+                            <PixelArt artData={SNOWMAN_ART} palette={EXTENDED_PALETTE} pixelSize={4} />
+                        </div>
+                    );
+                }
+                if (deco.isXmasTree) {
+                    return (
+                        <div key={`xt-${deco.id}`} className="absolute z-0 pointer-events-none" style={{ left: deco.x, bottom: deco.y, transform: `scale(${deco.scale})` }}>
+                            <PixelArt artData={XMAS_TREE_DECORATED_ART} palette={EXTENDED_PALETTE} pixelSize={4} />
+                        </div>
+                    );
                 }
 
                 return (
@@ -555,14 +550,13 @@ export const CaseSelectionScreen: React.FC = () => {
                                 left: plat.x,
                                 bottom: plat.y - plat.h,
                                 width: plat.w,
-                                height: plat.h * 3, // Visual height larger than hitbox
-                                transform: 'translateX(-50%)', // Center align art
+                                height: plat.h * 3, 
+                                transform: 'translateX(-50%)', 
                                 zIndex: 5,
                                 fontSize: '2rem',
                                 color: asset.color
                             }}
                         >
-                            {/* Render visual content based on type */}
                             {asset.type === 'letter' || asset.type === 'emoji' ? (
                                 <div className="filter drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] transform hover:scale-110 transition-transform">
                                     {asset.content}
@@ -571,7 +565,6 @@ export const CaseSelectionScreen: React.FC = () => {
                         </div>
                     );
                 } else {
-                    // Standard Platform (Seasonal)
                     return (
                         <div key={`plat-${i}`} className="absolute border-t-4 z-5" 
                              style={{ 
@@ -599,7 +592,6 @@ export const CaseSelectionScreen: React.FC = () => {
                 }}
             >
                  <div className="w-full h-4 border-b-2 border-dashed mt-2" style={{ borderColor: currentTheme.roadColor }}></div>
-                 {/* Seasonal Overlay on ground (Grass/Snow) */}
                  <div 
                     className="absolute -top-4 w-full h-4 bg-repeat-x opacity-70" 
                     style={{
@@ -607,6 +599,14 @@ export const CaseSelectionScreen: React.FC = () => {
                         backgroundSize: '20px 10px'
                     }}
                 ></div>
+                {/* Visual Snowdrifts for New Year */}
+                {isNewYear && (
+                    <div className="absolute -top-10 left-0 w-full h-10 pointer-events-none" style={{
+                        backgroundImage: 'radial-gradient(circle at 50% 100%, white 0%, transparent 70%)',
+                        backgroundSize: '200px 100%',
+                        opacity: 0.8
+                    }}></div>
+                )}
             </div>
 
             {/* 5. Doors Layer */}
@@ -616,7 +616,6 @@ export const CaseSelectionScreen: React.FC = () => {
                 const isActive = activeDoorId === door.id;
                 const badge = MINIGAME_BADGES[door.id] || "✅";
                 
-                // --- 3RD SEPTEMBER WORMHOLE LOGIC ---
                 if (door.id === '3-2') {
                     const shouldShow = seasonalEvent === SeasonalEvent.SEPTEMBER_3 || unlocked;
                     if (!shouldShow) return null; 
@@ -643,7 +642,6 @@ export const CaseSelectionScreen: React.FC = () => {
                     )
                 }
 
-                // --- STANDARD DOORS ---
                 const artData = DOOR_ART_MAP[door.artId as keyof typeof DOOR_ART_MAP] || DOOR_ART_MAP[1];
                 
                 return (
@@ -669,7 +667,6 @@ export const CaseSelectionScreen: React.FC = () => {
                 );
             })}
 
-            {/* Dynamic Stop Sign at current limit */}
             <div className="absolute z-10" style={{ left: stopSignX, bottom: GROUND_LEVEL }}>
                 <PixelArt artData={STOP_SIGN_ART} palette={EXTENDED_PALETTE} pixelSize={6} />
             </div>
@@ -680,7 +677,6 @@ export const CaseSelectionScreen: React.FC = () => {
             </div>
         </div>
 
-        {/* Mobile Controls */}
         {isMobile && (
             <div className="absolute bottom-4 left-0 w-full flex justify-between px-6 pointer-events-none z-50 select-none touch-none">
                 <div className="relative w-48 h-32 pointer-events-auto opacity-70">

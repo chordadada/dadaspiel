@@ -151,8 +151,8 @@ const getSeasonalEvent = (): SeasonalEvent => {
     // 3 Сентября
     if (month === 8 && date === 3) return SeasonalEvent.SEPTEMBER_3;
 
-    // Новый Год (с 20 дек по 5 янв)
-    if ((month === 11 && date >= 20) || (month === 0 && date <= 5)) return SeasonalEvent.NEW_YEAR;
+    // Новый Год (с 24 дек по 13 янв)
+    if ((month === 11 && date >= 24) || (month === 0 && date <= 13)) return SeasonalEvent.NEW_YEAR;
 
     // День Рождения Дада (2 августа) - выбрано специально для контраста
     if (month === 7 && date === 2) return SeasonalEvent.DADA_BIRTHDAY;

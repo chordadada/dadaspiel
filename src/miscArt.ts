@@ -1,4 +1,3 @@
-
 // ... existing imports and exports ...
 
 // Пиксель-арт для художника-дадаиста
@@ -140,8 +139,6 @@ export const MINI_GUARD_ART = [ // 6x9
 ];
 
 // --- CHALK DRAWINGS (For ProhodKKino background) ---
-// Used as subtle background details on the "asphalt".
-// Palette: 'w' for white chalk (or light grey).
 export const CHALK_DRAWINGS = [
     // 1. Sun
     [
@@ -321,8 +318,50 @@ export const STORK_SILHOUETTE = [
 "     bbbbbbbbbbbb       ",
 "    bbbbbbbbb           ",
 "   bb                   ",
-"  bb                    ",
+  "  bb                    ",
 " bb                     ",
+];
+
+// --- HOLIDAY ASSETS ---
+
+// Snowman (White with coal and carrot)
+// Colors: W (White), b (Black), O (Orange)
+export const SNOWMAN_ART = [
+"    bbbb    ",
+"   bbbbbb   ",
+"    WWWW    ",
+"   WWWWWW   ",
+"  WbWWbWWW  ",
+"   WWOWWW   ",
+"  WWWWWWWW  ",
+" WWWWWWWWWW ",
+" WWWWbWWWWW ",
+" WWWWWWWWWW ",
+"WWWWWWWWWWWW",
+"WWWWWWWWWWWW",
+"WWWWWWWWWWWW",
+" WWWWWWWWWW ",
+"  WWWWWWWW  ",
+];
+
+// Decorated X-Mas Tree
+// Colors: G (Green), R (Red), Y (Yellow), B (Blue)
+export const XMAS_TREE_DECORATED_ART = [
+"      YY      ",
+"     YYYY     ",
+"      YY      ",
+"     GGGG     ",
+"    GGGGGG    ",
+"   GGGRGGGG   ",
+"  GGGGGGYGGG  ",
+" GGGGBGGGGGG  ",
+"GGGGGGGGGRGGG ",
+"  GGGGGGGGGG  ",
+" GGGGYGGGGGG  ",
+"GGGGGGGGGBGGG ",
+"GGGGGGGGGGGGG ",
+" GGGGGGRGGGGG ",
+"      bb      ",
 ];
 
 // 1. Галерея (Золотая рамка)
@@ -475,7 +514,6 @@ export const STOP_SIGN_ART = [
 ];
 
 // --- BACKGROUND SVG ASSETS LIBRARY ---
-// To add more: create a new object with `viewBox`, `path`, and `color`.
 export const BACKGROUND_ASSETS = [
     // Tree 1 (Pine)
     { viewBox: "0 0 100 100", path: "M50 10 L20 80 L80 80 Z M45 80 L45 100 L55 100 L55 80 Z", color: "#1a472a" },
@@ -492,8 +530,6 @@ export const BACKGROUND_ASSETS = [
 ];
 
 // --- PLATFORM SVG ASSETS LIBRARY ---
-// Used for "Middle Tier" platforms.
-// To add more: add an object with `id`, `viewBox`, `content` (React Node or Path), and visual `width`/`height`.
 export const PLATFORM_ASSETS = [
     { id: 'D', type: 'letter', content: 'ДА', color: '#ff00ff' },
     { id: 'A', type: 'letter', content: 'АД', color: '#00ffff' },
