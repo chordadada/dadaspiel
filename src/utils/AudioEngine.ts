@@ -109,7 +109,9 @@ const CUSTOM_PLAYLIST = [
     'xdm10.mp3',
     'xdm11.mp3',
     'xdm12.mp3',
-    'xdm13.mp3'
+		'xdm13.mp3',
+    'xdm14.mp3',
+    'xdm15.mp3'
 ];
 
 // --- Volume Constants ---
