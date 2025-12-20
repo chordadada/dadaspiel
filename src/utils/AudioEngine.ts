@@ -64,6 +64,11 @@ export enum SoundType {
   // Ne Podavis Specific
   SLAP,
   GASP,
+
+  // Secret Level Sounds
+  SECRET_ENTER,
+  SECRET_EXIT,
+  DASEIN_LOST,
 }
 
 export enum MusicType {
@@ -556,68 +561,48 @@ export const playSound = (type: SoundType) => {
             gaspOsc.start(t); gaspOsc.stop(t + 0.6);
             break;
 
-        // DADA ECSTASY: Updated Logic (Ticking -> Swell -> Pop)
+        // DADA ECSTASY
         case SoundType.DADA_ECSTASY: {
-            // 1. Ticking / Clicking (starts slow, speeds up)
-            // Simulating a geiger counter or timer ticking
-            const clickOsc = ctx.createOscillator();
-            const clickGain = ctx.createGain();
-            clickOsc.type = 'square';
-            clickOsc.frequency.value = 800; // High pitch click
-            clickOsc.connect(clickGain).connect(ctx.destination);
-            
-            // Create a custom pulsing gain curve for clicking effect
-            clickGain.gain.setValueAtTime(0, t);
-            
-            // Schedule clicks up to 11s (match visual explosion)
-            let time = t;
-            let interval = 0.5; // Start interval (500ms)
-            while (time < t + 11) {
-                clickGain.gain.setValueAtTime(0, time);
-                clickGain.gain.linearRampToValueAtTime(0.05, time + 0.01);
-                clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-                time += interval;
-                interval *= 0.9; // Speed up
-                if (interval < 0.05) interval = 0.05; // Cap speed
-            }
-            clickOsc.start(t);
-            clickOsc.stop(t + 11);
-
-            // 2. Swelling Pad (Starts at 3s, grows until 11s)
-            const swellOsc = ctx.createOscillator();
-            const swellGain = ctx.createGain();
-            swellOsc.type = 'sawtooth';
-            swellOsc.frequency.setValueAtTime(55, t + 3); // Low bass
-            swellOsc.frequency.linearRampToValueAtTime(220, t + 11); // Rise pitch
-            
-            // Lowpass filter to open up the sound
-            const filter = ctx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(100, t + 3);
-            filter.frequency.exponentialRampToValueAtTime(2000, t + 11);
-
-            swellOsc.connect(filter).connect(swellGain).connect(ctx.destination);
-            swellGain.gain.setValueAtTime(0, t + 3);
-            swellGain.gain.linearRampToValueAtTime(0.2, t + 11); // Ear-safe volume cap
-            swellOsc.start(t + 3);
-            swellOsc.stop(t + 11);
-
-            // 3. The Pop (at 11s, synced with visual explosion)
-            const popNoise = ctx.createBufferSource();
-            const bufferSize = ctx.sampleRate * 0.5; // 0.5 sec burst
-            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
-            }
-            popNoise.buffer = buffer;
-            const popGain = ctx.createGain();
-            popGain.gain.setValueAtTime(0.4, t + 11);
-            popGain.gain.exponentialRampToValueAtTime(0.001, t + 11.5);
-            popNoise.connect(popGain).connect(ctx.destination);
-            popNoise.start(t + 11);
-
+            const clickOsc = ctx.createOscillator(); const clickGain = ctx.createGain(); clickOsc.type = 'square'; clickOsc.frequency.value = 800; clickOsc.connect(clickGain).connect(ctx.destination); clickGain.gain.setValueAtTime(0, t); let time = t; let interval = 0.5; while (time < t + 11) { clickGain.gain.setValueAtTime(0, time); clickGain.gain.linearRampToValueAtTime(0.05, time + 0.01); clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); time += interval; interval *= 0.9; if (interval < 0.05) interval = 0.05; } clickOsc.start(t); clickOsc.stop(t + 11);
+            const swellOsc = ctx.createOscillator(); const swellGain = ctx.createGain(); swellOsc.type = 'sawtooth'; swellOsc.frequency.setValueAtTime(55, t + 3); swellOsc.frequency.linearRampToValueAtTime(220, t + 11); const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(100, t + 3); filter.frequency.exponentialRampToValueAtTime(2000, t + 11); swellOsc.connect(filter).connect(swellGain).connect(ctx.destination); swellGain.gain.setValueAtTime(0, t + 3); swellGain.gain.linearRampToValueAtTime(0.2, t + 11); swellOsc.start(t + 3); swellOsc.stop(t + 11);
+            const popNoise = ctx.createBufferSource(); const bufferSize = ctx.sampleRate * 0.5; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; } popNoise.buffer = buffer; const popGain = ctx.createGain(); popGain.gain.setValueAtTime(0.4, t + 11); popGain.gain.exponentialRampToValueAtTime(0.001, t + 11.5); popNoise.connect(popGain).connect(ctx.destination); popNoise.start(t + 11);
             break; 
+        }
+
+        // Secret Level Sounds
+        case SoundType.DASEIN_LOST: {
+            play(40, 0.8, 0.5, 'sawtooth');
+            playNoise(0.5, 0.4, 'lowpass', 400);
+            const failOsc = ctx.createOscillator();
+            const failGain = ctx.createGain();
+            failOsc.connect(failGain).connect(ctx.destination);
+            failOsc.type = 'square';
+            failOsc.frequency.setValueAtTime(200, t);
+            failOsc.frequency.exponentialRampToValueAtTime(50, t + 0.5);
+            failGain.gain.setValueAtTime(0.3, t);
+            failGain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+            failOsc.start(t); failOsc.stop(t+0.5);
+            break;
+        }
+        case SoundType.SECRET_ENTER: {
+            play(880, 2.0, 0.1, 'sine');
+            play(110, 2.0, 0.3, 'sawtooth');
+            playNoise(1.0, 0.2, 'bandpass', 1000);
+            const warpOsc = ctx.createOscillator();
+            const warpGain = ctx.createGain();
+            warpOsc.connect(warpGain).connect(ctx.destination);
+            warpOsc.frequency.setValueAtTime(100, t);
+            warpOsc.frequency.linearRampToValueAtTime(800, t + 1);
+            warpOsc.frequency.linearRampToValueAtTime(100, t + 2);
+            warpGain.gain.setValueAtTime(0.2, t);
+            warpGain.gain.linearRampToValueAtTime(0, t + 2);
+            warpOsc.start(t); warpOsc.stop(t+2);
+            break;
+        }
+        case SoundType.SECRET_EXIT: {
+            playNoise(0.5, 0.3, 'lowpass', 200);
+            play(50, 1.0, 0.4, 'sawtooth');
+            break;
         }
             
         case SoundType.BUTTON_CLICK: play(440, 0.1, 0.1, 'triangle'); osc!.frequency.exponentialRampToValueAtTime(880, t + 0.1); break;

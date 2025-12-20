@@ -4,7 +4,7 @@ import { useSession, useProfile, useSettings, useNavigation } from '../../contex
 import { SoundType } from '../../utils/AudioEngine';
 import { PixelArt } from '../core/PixelArt';
 import { CHARACTER_ART_MAP, PIXEL_ART_PALETTE } from '../../../characterArt';
-import { DOOR_ART_MAP, STOP_SIGN_ART, BACKGROUND_ASSETS, PLATFORM_ASSETS, BISON_SILHOUETTE, LIBRARY_SILHOUETTE, STORK_SILHOUETTE, TRACTOR_SILHOUETTE, SNOWMAN_ART, XMAS_TREE_DECORATED_ART } from '../../miscArt';
+import { DOOR_ART_MAP, STOP_SIGN_ART, BACKGROUND_ASSETS, PLATFORM_ASSETS, BISON_SILHOUETTE, LIBRARY_SILHOUETTE, STORK_SILHOUETTE, TRACTOR_SILHOUETTE, SNOWMAN_ART, XMAS_TREE_DECORATED_ART, WALKING_NOSE_ART, FLYING_MUSTACHE_ART, MOP_ART, CARDBOARD_CASTLE_ART, UNDERPANTS_ART_DATA } from '../../miscArt';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { Character, SeasonalEvent } from '../../../types';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -47,6 +47,15 @@ interface BackgroundDecoration {
     isXmasTree?: boolean;
 }
 
+interface Enemy {
+    id: number;
+    x: number;
+    y: number;
+    baseY: number; // for wave movement
+    vx: number;
+    type: 'nose' | 'mustache';
+}
+
 // World Settings
 const GROUND_LEVEL = 100;
 const WORLD_WIDTH = 5000; 
@@ -60,6 +69,7 @@ const EXTENDED_PALETTE = {
     S: '#777777', // Silver/Pole
     G: '#1a472a', // Green for Tree
     B: '#0077be', // Blue for Tree
+    O: '#d2b48c', // Cardboard color
 };
 
 // --- Unique Badges for Minigames ---
@@ -159,9 +169,9 @@ const sfc32 = (a: number, b: number, c: number, d: number) => {
 };
 
 export const CaseSelectionScreen: React.FC = () => {
-  const { character } = useSession();
+  const { character, addScore } = useSession();
   const { activeProfile, dynamicCases, profiles } = useProfile();
-  const { playSound, seasonalEvent, seasonalAnimationsEnabled, debugMode } = useSettings();
+  const { playSound, seasonalEvent, seasonalAnimationsEnabled, debugMode, logEvent } = useSettings();
   const { jumpToMinigame } = useNavigation();
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -173,10 +183,21 @@ export const CaseSelectionScreen: React.FC = () => {
   const [activeDoorId, setActiveDoorId] = useState<string | null>(null);
   const [season] = useState<Season>(() => getSeason());
   
+  // --- Secret Level State ---
+  const [secretModeActive, setSecretModeActive] = useState(false);
+  const [secretEnemies, setSecretEnemies] = useState<Enemy[]>([]);
+  const [secretPlatforms, setSecretPlatforms] = useState<Platform[]>([]);
+  const [daseins, setDaseins] = useState(3); // New Health Mechanic "Dasein"
+  
   // Refs
   const activeDoorIdRef = useRef<string | null>(null);
   const playerRef = useRef(player);
   const keysPressed = useRef<{ [key: string]: boolean }>({});
+  
+  // Secret Level Refs
+  const jumpHeldTime = useRef(0);
+  const isJumpingHeld = useRef(false);
+  const gameTime = useRef(0);
   
   useEffect(() => { activeDoorIdRef.current = activeDoorId; }, [activeDoorId]);
   useEffect(() => { playerRef.current = player; }, [player]);
@@ -343,6 +364,61 @@ export const CaseSelectionScreen: React.FC = () => {
       }
   }, []); // Run ONCE on mount
 
+  // --- Secret Level Generation ---
+  useEffect(() => {
+      if (secretModeActive && secretPlatforms.length === 0) {
+          // Generate "Super Dada Bros" World 1-1 parody segments
+          const plats: Platform[] = [];
+          const enemies: Enemy[] = [];
+          
+          // 1. Create the BRIDGE platform right at stopSignX so player doesn't fall
+          // Extending from slightly before to slightly after
+          plats.push({ x: stopSignX + 50, y: GROUND_LEVEL, w: 200, h: 20, type: 'standard' });
+
+          const startX = stopSignX + 200;
+          
+          // Helper to generate
+          let cx = startX;
+          for(let i=0; i<25; i++) { // Slightly longer level
+              // Gap
+              cx += 100 + Math.random() * 50;
+              
+              // Platform
+              const w = 100 + Math.random() * 200;
+              const h = 20;
+              const y = GROUND_LEVEL + (Math.random() > 0.5 ? 50 + Math.random() * 100 : 0);
+              plats.push({ x: cx, y, w, h, type: 'standard' });
+              
+              // Enemy on platform
+              if (Math.random() < 0.7) {
+                  // Mix Noses and Mustaches
+                  const type = Math.random() > 0.6 ? 'mustache' : 'nose';
+                  enemies.push({ 
+                      id: i, 
+                      x: cx + w/2, 
+                      y: y + (type === 'mustache' ? 50 : 0), 
+                      baseY: y + (type === 'mustache' ? 50 : 0),
+                      vx: -0.1, 
+                      type: type 
+                  });
+              }
+              
+              cx += w;
+          }
+          
+          // Final Castle (Decor) & Mop Flagpole
+          const endX = cx + 200;
+          const castleY = 100;
+          
+          // Castle Base Platform
+          plats.push({ x: endX, y: castleY, w: 600, h: 200, type: 'standard' });
+          
+          setSecretPlatforms(plats);
+          setSecretEnemies(enemies);
+      }
+  }, [secretModeActive, stopSignX]);
+
+
   // --- Helpers ---
   const isMinigameUnlocked = (targetId: string) => {
       if (targetId === 'bonus-player') return true; // Already checked in generation logic
@@ -416,12 +492,34 @@ export const CaseSelectionScreen: React.FC = () => {
 
   // --- Physics Loop ---
   useGameLoop(useCallback((deltaTime) => {
+      gameTime.current += deltaTime;
       const left = keysPressed.current['ArrowLeft'] || keysPressed.current['KeyA'];
       const right = keysPressed.current['ArrowRight'] || keysPressed.current['KeyD'];
+      const up = keysPressed.current['ArrowUp'] || keysPressed.current['Space'] || keysPressed.current['KeyW'];
       
+      // Track Jump Holding for Secret Mode
+      if (up) {
+          jumpHeldTime.current += deltaTime;
+          isJumpingHeld.current = true;
+      } else {
+          jumpHeldTime.current = 0;
+          isJumpingHeld.current = false;
+      }
+
       let dx = 0;
       if (left) dx = -1;
       if (right) dx = 1;
+
+      // Close Secret Mode Logic
+      const closeSecretMode = () => {
+          setSecretModeActive(false);
+          setPlayer(curr => ({ ...curr, x: stopSignX - 100, y: GROUND_LEVEL, vy: 0 }));
+          playSound(SoundType.SECRET_EXIT);
+          // Clear secret entities
+          setSecretPlatforms([]);
+          setSecretEnemies([]);
+          setDaseins(3);
+      };
 
       setPlayer(p => {
           let newX = p.x + dx * MOVE_SPEED * deltaTime;
@@ -429,16 +527,64 @@ export const CaseSelectionScreen: React.FC = () => {
           let newY = p.y + newVy * deltaTime;
           let newGrounded = false;
 
-          newX = Math.max(50, Math.min(newX, stopSignX - 30)); 
-
-          if (newY <= GROUND_LEVEL) {
-              newY = GROUND_LEVEL;
-              newVy = 0;
-              newGrounded = true;
+          // SECRET MODE CHECK
+          // Increased requirement to 5000ms
+          if (!secretModeActive && newX > stopSignX - 100 && right && jumpHeldTime.current > 5000) {
+              setSecretModeActive(true);
+              setDaseins(3); // Reset Daseins on enter
+              playSound(SoundType.SECRET_ENTER);
+              logEvent("SECRET DADA MARIO ACTIVATED! (DASEIN MODE)");
           }
 
+          // Clamp position unless secret active
+          if (!secretModeActive) {
+              newX = Math.max(50, Math.min(newX, stopSignX - 30)); 
+          }
+
+          // Flagpole Win Condition (Secret Mode)
+          // The flagpole is at the end of the last platform in secretPlatforms
+          if (secretModeActive && secretPlatforms.length > 0) {
+              const castlePlat = secretPlatforms[secretPlatforms.length - 1]; // Last is castle base
+              // Flagpole is positioned somewhat before the castle structure visually
+              const flagpoleX = castlePlat.x - 250; 
+              
+              if (Math.abs(newX - flagpoleX) < 20 && p.y > GROUND_LEVEL + 50) {
+                  // Touched flagpole
+                  playSound(SoundType.WIN_KALENDAR); // Use celebratory sound
+                  logEvent("SECRET DADA MARIO WON!");
+                  alert("ИЗВИНИТЕ, НО ВАШ СМЫСЛ В ДРУГОМ ЗАМКЕ.");
+                  closeSecretMode();
+                  return p;
+              }
+          }
+
+          if (newY <= GROUND_LEVEL) {
+              // Death pit logic for secret mode
+              if (secretModeActive && newX > stopSignX + 50) {
+                  // Fall logic
+                  if (newY < -500) { // Fell off world
+                      playSound(SoundType.DASEIN_LOST);
+                      const nextDaseins = daseins - 1;
+                      setDaseins(nextDaseins);
+                      if (nextDaseins <= 0) {
+                          closeSecretMode();
+                          return p; // Returning old p effectively cancels update till state settles, though setPlayer above handles pos
+                      } else {
+                          // Respawn at start of secret area (after the bridge)
+                          return { ...p, x: stopSignX + 150, y: GROUND_LEVEL, vy: 0 }; 
+                      }
+                  }
+              } else {
+                  newY = GROUND_LEVEL;
+                  newVy = 0;
+                  newGrounded = true;
+              }
+          }
+
+          // Platform Collision (Normal + Secret)
+          const currentPlatforms = [...platforms, ...secretPlatforms];
           if (newVy <= 0) {
-              for (const plat of platforms) {
+              for (const plat of currentPlatforms) {
                   const hitLeft = plat.type === 'art' ? plat.x - plat.w/2 : plat.x;
                   const hitRight = plat.type === 'art' ? plat.x + plat.w/2 : plat.x + plat.w;
 
@@ -460,6 +606,54 @@ export const CaseSelectionScreen: React.FC = () => {
               facingRight: dx !== 0 ? dx > 0 : p.facingRight
           };
       });
+      
+      // Secret Enemy Logic
+      if (secretModeActive) {
+          setSecretEnemies(prev => prev.map(e => {
+              // Move enemy
+              let ex = e.x + e.vx * deltaTime * 0.2;
+              let ey = e.y;
+
+              // Mustache Wave Movement
+              if (e.type === 'mustache') {
+                  ey = e.baseY + Math.sin(gameTime.current / 500 + e.id) * 30;
+              }
+              
+              // Collision with player
+              const p = playerRef.current;
+              // Larger hit box for mustache
+              const hitDist = e.type === 'mustache' ? 40 : 30; 
+              const dist = Math.sqrt((p.x - ex)**2 + (p.y - ey)**2);
+              
+              if (dist < hitDist) {
+                  // Stomp check
+                  const isStomp = p.vy < 0 && p.y > ey + 10;
+                  
+                  if (isStomp) {
+                      // Mario Stomp!
+                      playSound(SoundType.SPLAT);
+                      addScore(e.type === 'mustache' ? 300 : 100);
+                      // Bounce player
+                      setPlayer(curr => ({ ...curr, vy: JUMP_FORCE * 0.8 }));
+                      return null; // Kill enemy
+                  } else {
+                      // Player Hit -> Lose Dasein
+                      playSound(SoundType.DASEIN_LOST);
+                      const nextDaseins = daseins - 1;
+                      setDaseins(nextDaseins);
+                      
+                      if (nextDaseins <= 0) {
+                          closeSecretMode();
+                      } else {
+                          // Respawn player
+                          setPlayer(curr => ({ ...curr, x: stopSignX + 150, y: GROUND_LEVEL }));
+                      }
+                  }
+              }
+              
+              return { ...e, x: ex, y: ey };
+          }).filter(e => e !== null) as Enemy[]);
+      }
 
       let foundDoor = null;
       for (const door of allDoors) {
@@ -484,12 +678,12 @@ export const CaseSelectionScreen: React.FC = () => {
       }
       setActiveDoorId(foundDoor);
 
-  }, [platforms, allDoors, seasonalEvent, stopSignX]), true);
+  }, [platforms, allDoors, seasonalEvent, stopSignX, secretModeActive, secretPlatforms, addScore, daseins]), true);
 
   // --- Rendering ---
   const charArt = CHARACTER_ART_MAP[character || Character.KANILA];
   const screenWidth = containerRef.current ? containerRef.current.clientWidth : 800;
-  const cameraX = Math.max(0, Math.min(WORLD_WIDTH - screenWidth, player.x - screenWidth / 2));
+  const cameraX = Math.max(0, Math.min(WORLD_WIDTH + (secretModeActive ? 5000 : 0) - screenWidth, player.x - screenWidth / 2));
 
   const landmarks = [
       { id: 1, x: 200, y: 120, art: BISON_SILHOUETTE, scale: 6, opacity: 0.3 },
@@ -498,10 +692,59 @@ export const CaseSelectionScreen: React.FC = () => {
       { id: 4, x: 4500, y: 120, art: TRACTOR_SILHOUETTE, scale: 7, opacity: 0.3 },
   ];
 
+  // Helper to render the Castle and Mop in Secret Mode
+  const renderSecretEnding = () => {
+      if (!secretModeActive || secretPlatforms.length === 0) return null;
+      const castlePlat = secretPlatforms[secretPlatforms.length - 1];
+      
+      // Castle Box
+      const castleX = castlePlat.x;
+      const castleY = castlePlat.y; // This is the y-pos (top) of the platform, so bottom of art
+      
+      // Flagpole (Mop)
+      const mopX = castleX - 250;
+      
+      return (
+          <>
+            {/* The Mop */}
+            <div className="absolute z-10" style={{ left: mopX, bottom: castleY, transform: 'scale(4) translateX(-50%)' }}>
+                <div className="relative">
+                    <PixelArt artData={MOP_ART} palette={EXTENDED_PALETTE} pixelSize={1} />
+                    {/* The Flag (Underpants) - Moving up and down */}
+                    <div className="absolute left-2 top-4 animate-bounce">
+                         <PixelArt artData={UNDERPANTS_ART_DATA} palette={EXTENDED_PALETTE} pixelSize={0.5} />
+                    </div>
+                </div>
+            </div>
+            
+            {/* The Castle (Cardboard Box) */}
+            <div className="absolute z-10" style={{ left: castleX, bottom: castleY, transform: 'scale(10) translateX(-50%)' }}>
+                <PixelArt artData={CARDBOARD_CASTLE_ART} palette={EXTENDED_PALETTE} pixelSize={1} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[4px] font-bold text-black opacity-50 font-sans">REALITY</div>
+            </div>
+          </>
+      );
+  };
+
   return (
     <div className="w-full h-full relative overflow-hidden font-mono" ref={containerRef}>
         
-        <DynamicSky />
+        {/* Dynamic Background: Invert colors if secret mode */}
+        <div className={`absolute inset-0 z-0 transition-all duration-1000 ${secretModeActive ? 'invert hue-rotate-180 brightness-50' : ''}`}>
+             <DynamicSky />
+        </div>
+
+        {/* DASEIN HUD - Only in Secret Mode */}
+        {secretModeActive && (
+            <div className="absolute top-4 right-4 z-50 flex items-center gap-2 animate-pulse bg-black/50 p-2 rounded">
+                <span className="text-xl font-bold text-red-500 font-mono">DASEIN:</span>
+                {Array.from({length: 3}).map((_, i) => (
+                    <span key={i} className={`text-2xl ${i < daseins ? 'text-red-500' : 'text-gray-800'}`}>
+                        {i < daseins ? '👁️' : '💀'}
+                    </span>
+                ))}
+            </div>
+        )}
 
         <div 
             className="absolute top-0 left-0 h-full transition-transform duration-75 ease-linear will-change-transform z-10"
@@ -564,8 +807,8 @@ export const CaseSelectionScreen: React.FC = () => {
                 </div>
             ))}
 
-            {/* 3. Mid Layer: Platforms */}
-            {platforms.map((plat, i) => {
+            {/* 3. Mid Layer: Platforms (Normal + Secret) */}
+            {[...platforms, ...secretPlatforms].map((plat, i) => {
                 if (plat.type === 'art' && plat.artAsset) {
                     const asset = plat.artAsset;
                     return (
@@ -598,7 +841,7 @@ export const CaseSelectionScreen: React.FC = () => {
                                  bottom: plat.y - plat.h, 
                                  width: plat.w, 
                                  height: plat.h,
-                                 backgroundColor: currentTheme.groundColor,
+                                 backgroundColor: secretModeActive && i >= platforms.length ? '#220022' : currentTheme.groundColor,
                                  borderColor: currentTheme.groundBorder
                              }}>
                             <div className="w-full h-full opacity-30" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #000 10px, #000 20px)'}}></div>
@@ -607,12 +850,13 @@ export const CaseSelectionScreen: React.FC = () => {
                 }
             })}
 
-            {/* 4. Ground Layer (Seasonal) */}
+            {/* 4. Ground Layer (Seasonal) - Hidden in secret void past Stop Sign */}
             <div 
                 className="absolute left-0 w-full border-t-4 z-5" 
                 style={{ 
                     height: GROUND_LEVEL, 
                     bottom: 0,
+                    width: secretModeActive ? stopSignX + 200 : '100%',
                     backgroundColor: currentTheme.groundColor,
                     borderColor: currentTheme.groundBorder
                 }}
@@ -715,7 +959,24 @@ export const CaseSelectionScreen: React.FC = () => {
                 );
             })}
 
-            <div className="absolute z-10" style={{ left: stopSignX, bottom: GROUND_LEVEL }}>
+            {/* Secret Level Enemies (Walking Noses & Flying Mustaches) */}
+            {secretEnemies.map(enemy => (
+                <div key={enemy.id} className="absolute z-20 animate-bounce" style={{ left: enemy.x, bottom: enemy.y, animationDuration: '0.5s' }}>
+                    {enemy.type === 'nose' ? (
+                        <PixelArt artData={WALKING_NOSE_ART} palette={PIXEL_ART_PALETTE} pixelSize={4} />
+                    ) : (
+                        <PixelArt artData={FLYING_MUSTACHE_ART} palette={PIXEL_ART_PALETTE} pixelSize={4} />
+                    )}
+                </div>
+            ))}
+            
+            {/* Render Secret Ending (Mop & Castle) */}
+            {renderSecretEnding()}
+
+            <div 
+                className={`absolute z-10 transition-transform duration-500 ${secretModeActive ? 'rotate-90 translate-y-10 opacity-50' : ''}`} 
+                style={{ left: stopSignX, bottom: GROUND_LEVEL }}
+            >
                 <PixelArt artData={STOP_SIGN_ART} palette={EXTENDED_PALETTE} pixelSize={6} />
             </div>
 

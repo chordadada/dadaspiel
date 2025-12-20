@@ -1,3 +1,4 @@
+
 // ... existing imports and exports ...
 
 // Пиксель-арт для художника-дадаиста
@@ -19,6 +20,8 @@ export const ARTIST_ART_DATA = [
 "  s bbb s       ",
 "  s bbb s       ",
 ];
+
+// ... (Keep BOTTLE_ART_DATA, WAITER_ART_DATA, GLASS_ART_DATA, ROWANBERRY_ART_DATA, UNDERPANTS_ART_DATA, GUARD_ART_DATA, MINI_GUARD_ART, WALKING_NOSE_ART, FLYING_MUSTACHE_ART, CHALK_DRAWINGS, BISON_SILHOUETTE, TRACTOR_SILHOUETTE, LIBRARY_SILHOUETTE, STORK_SILHOUETTE, SNOWMAN_ART, XMAS_TREE_DECORATED_ART, DOOR_ART_1...DOOR_ART_6, DOOR_ART_MAP, STOP_SIGN_ART, BACKGROUND_ASSETS, PLATFORM_ASSETS as they were) ...
 
 // Пиксель-арт для бутылки шампанского
 export const BOTTLE_ART_DATA = [
@@ -138,6 +141,77 @@ export const MINI_GUARD_ART = [ // 6x9
   " b  b ",
 ];
 
+// Ходячий Нос (Враг в секретном уровне)
+// Palette: s (skin), d (dark skin)
+export const WALKING_NOSE_ART = [
+    "      sss       ",
+    "     sssss      ",
+    "    sssssss     ",
+    "   sssssssss    ",
+    "   sssssssss    ",
+    "  ddsssssssdd   ",
+    "  ddsssssssdd   ",
+    "   sssssssss    ",
+    "    bb   bb     ",
+    "   bb     bb    ",
+];
+
+// Flying Mustache (Another secret enemy)
+export const FLYING_MUSTACHE_ART = [
+    "      hhhh      ",
+    "    hhHHHHhh    ",
+    "   hHHHHHHHHh   ",
+    "  hHHHHHHHHHHh  ",
+    "  hHHH    HHHh  ",
+    " hHH        HHh ",
+    " hH          Hh ",
+];
+
+// The Mop (Flagpole substitute)
+// S: Silver/Grey, b: Black, Y: Yellow/Wood
+export const MOP_ART = [
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "      S      ",
+    "     bbb     ",
+    "    bbbbb    ",
+    "   bbbbbbb   ",
+    "  bbbbbbbbb  ",
+    " bbbbbbbbbbb ",
+];
+
+// Cardboard Box Castle
+// C: Cardboard (Use 'd' or 's' from palette or define custom), b: black
+// Mapping 'O' to Orange/Brown for cardboard in standard palette
+export const CARDBOARD_CASTLE_ART = [
+    "                    ",
+    "  O  O  O  O  O  O  ",
+    "  O  O  O  O  O  O  ",
+    "  OOOOOOOOOOOOOOOO  ",
+    "  O              O  ",
+    "  O   bb    bb   O  ",
+    "  O   bb    bb   O  ",
+    "  O              O  ",
+    "  O    bbbbbb    O  ",
+    "  O    b    b    O  ",
+    "  O    b    b    O  ",
+    "  O    b    b    O  ",
+    "  OOOOOOOOOOOOOOOO  ",
+];
+
+// ... (Keep CHALK_DRAWINGS and following sections) ...
 // --- CHALK DRAWINGS (For ProhodKKino background) ---
 export const CHALK_DRAWINGS = [
     // 1. Sun
@@ -380,6 +454,7 @@ export const DOOR_ART_1 = [
 " Y bbbbbb Y ",
 " Y bbbbbb Y ",
 " Y bbbbbb Y ",
+" Y bbbbbb Y ",
 " Y        Y ",
 " YYYYYYYYYY ",
 ];
@@ -455,9 +530,7 @@ export const DOOR_ART_5 = [
 " W   bb   W ",
 " W        W ",
 " W        W ",
-" W        W ",
 " W   bb   W ",
-" W        W ",
 " W        W ",
 " W        W ",
 " W        W ",
