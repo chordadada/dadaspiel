@@ -33,7 +33,7 @@ export const StartScreen: React.FC = () => {
   }, []);
 
   const completedChars = useMemo(() => new Set(profiles.filter(p => p.gameCompleted).map(p => p.character)), [profiles]);
-  const isBlackPlayerUnlocked = completedChars.has(Character.KANILA) || completedChars.has(Character.SEXISM);
+  const isBlackPlayerUnlocked = completedChars.has(Character.KANILA) && completedChars.has(Character.SEXISM);
 
   const triggerSwipeAnim = () => {
       setSwipeAnim(true);
@@ -156,7 +156,7 @@ export const StartScreen: React.FC = () => {
                             <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-4">
                                 <span className="text-5xl">🚫</span>
                                 <p className="text-m md:text-base font-bold">ВЫБОР НЕДОСТУПЕН</p>
-                                <p className="text-sm md:text-m opacity-70">Завершите симуляцию за Канилу или Сексизма для разблокировки.</p>
+                                <p className="text-sm md:text-m opacity-70">Завершите симуляцию за Канилу и Сексизма для разблокировки.</p>
                             </div>
                         ) : (
                             <>

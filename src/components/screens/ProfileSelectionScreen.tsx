@@ -59,7 +59,7 @@ export const ProfileSelectionScreen: React.FC = () => {
         <div className="flex flex-col items-center justify-center h-full p-8">
             <Title onTitleClick={handleTitleClick} />
             {debugMode && <p className="text-purple-400 mb-2 animate-pulse">РЕЖИМ АЛАДОК АКТИВИРОВАН</p>}
-            <h2 className="text-2xl mb-6">ВЫБЕРИТЕ БИОСУЩЕСТВО</h2>
+            <h2 className="text-2xl mb-6">ВЫБЕРИТЕ БИОЭКСПЕРИМЕНТ</h2>
             <div className="w-full max-w-md flex flex-col gap-4 mb-6 overflow-y-auto" style={{maxHeight: '40vh'}}>
                 {profiles.length > 0 ? (
                     profiles.map(profile => (

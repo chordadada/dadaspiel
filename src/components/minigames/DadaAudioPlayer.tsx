@@ -5,29 +5,47 @@ import { stopMusic, CUSTOM_PLAYLIST } from '../../utils/AudioEngine';
 import { MinigameHUD } from '../core/MinigameHUD';
 import { MANIFESTO_LINES } from '../../data/manifesto';
 
+interface TextParticle {
+    id: number;
+    text: string;
+    x: number;
+    y: number;
+    size: number;
+    rotation: number;
+    color: string;
+    life: number;
+    maxLife: number;
+    vx: number;
+    vy: number;
+}
+
+const COLORS = ['#ffffff', '#ffff00', '#ff00ff', '#00ffff', '#ff3333'];
+
 export const DadaAudioPlayer: React.FC<{ onWin: () => void; onLose: () => void }> = ({ onWin }) => {
     const { isMuted } = useSettings();
     
+    // Audio State
     const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [visualizationData, setVisualizationData] = useState<number[]>(new Array(16).fill(0));
-    const [lyricIndex, setLyricIndex] = useState(0);
     
+    // Visualizer State
+    const [particles, setParticles] = useState<TextParticle[]>([]);
+    
+    // Refs
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const particleIdCounter = useRef(0);
     const animationFrameRef = useRef<number>(0);
-    const lyricIntervalRef = useRef<number>(0);
+    const spawnTimerRef = useRef<number>(0);
 
     // Initial setup
     useEffect(() => {
-        // Stop global background music so we can play our own
         stopMusic();
         
         const audio = new Audio();
         audioRef.current = audio;
         audio.volume = isMuted ? 0 : 0.7;
         
-        // Load first track
         if (CUSTOM_PLAYLIST.length > 0) {
             audio.src = `music/${CUSTOM_PLAYLIST[0]}`;
         }
@@ -45,50 +63,75 @@ export const DadaAudioPlayer: React.FC<{ onWin: () => void; onLose: () => void }
                 audioRef.current.src = "";
             }
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-            if (lyricIntervalRef.current) clearInterval(lyricIntervalRef.current);
         };
     }, []);
 
-    // Handle mute toggle dynamically
+    // Handle mute
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.volume = isMuted ? 0 : 0.7;
         }
     }, [isMuted]);
 
-    // Simulated Visualizer Loop
+    // --- Kinetic Typography Engine ---
     useEffect(() => {
-        const loop = () => {
+        let lastTime = performance.now();
+
+        const loop = (time: number) => {
+            const dt = (time - lastTime) / 1000;
+            lastTime = time;
+
+            // 1. Spawn Particles if playing
             if (isPlaying) {
-                // Generate fake frequency data
-                setVisualizationData(prev => prev.map(() => Math.random() * 100));
-            } else {
-                setVisualizationData(new Array(16).fill(5)); // Idle state
+                spawnTimerRef.current += dt;
+                // Spawn rate matches a chaotic rhythm (approx 120 BPMish)
+                if (spawnTimerRef.current > 0.4) {
+                    spawnTimerRef.current = 0;
+                    
+                    const text = MANIFESTO_LINES[Math.floor(Math.random() * MANIFESTO_LINES.length)];
+                    // Shorten very long lines for visual impact
+                    const displayCheck = text.length > 30 ? text.substring(0, 30) + "..." : text;
+
+                    const newParticle: TextParticle = {
+                        id: particleIdCounter.current++,
+                        text: displayCheck,
+                        x: 10 + Math.random() * 80, // % coordinates
+                        y: 10 + Math.random() * 80,
+                        size: 1 + Math.random() * 3, // rem
+                        rotation: (Math.random() - 0.5) * 45,
+                        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                        life: 0,
+                        maxLife: 3 + Math.random() * 2,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                    };
+                    
+                    setParticles(prev => [...prev, newParticle]);
+                }
             }
+
+            // 2. Update Particles
+            setParticles(prev => prev.map(p => ({
+                ...p,
+                life: p.life + dt,
+                x: p.x + p.vx * dt,
+                y: p.y + p.vy * dt
+            })).filter(p => p.life < p.maxLife)); // Remove dead particles
+
             animationFrameRef.current = requestAnimationFrame(loop);
         };
-        loop();
+
+        animationFrameRef.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(animationFrameRef.current);
     }, [isPlaying]);
 
-    // Lyrics Cycle
-    useEffect(() => {
-        if (isPlaying) {
-            lyricIntervalRef.current = window.setInterval(() => {
-                setLyricIndex(prev => (prev + 1) % MANIFESTO_LINES.length);
-            }, 3000); // Change lyric every 3 seconds
-        } else {
-            clearInterval(lyricIntervalRef.current);
-        }
-        return () => clearInterval(lyricIntervalRef.current);
-    }, [isPlaying]);
 
+    // --- Controls ---
     const playTrack = (index: number) => {
         if (!audioRef.current) return;
         const trackName = CUSTOM_PLAYLIST[index];
         if (!trackName) return;
 
-        // If changing track
         if (index !== currentTrackIndex || !audioRef.current.src.includes(trackName)) {
             audioRef.current.src = `music/${trackName}`;
             audioRef.current.load();
@@ -128,95 +171,97 @@ export const DadaAudioPlayer: React.FC<{ onWin: () => void; onLose: () => void }
         playTrack(randIndex);
     };
 
-    const currentLyric = MANIFESTO_LINES[lyricIndex];
+    const currentTrackName = CUSTOM_PLAYLIST[currentTrackIndex]?.replace('.mp3', '') || "UNKNOWN";
 
     return (
-        <div className="w-full h-full bg-zinc-900 flex flex-col items-center justify-center relative overflow-hidden">
-            {/* Background Animation */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-                <div 
-                    className="w-[200%] h-[200%] absolute top-[-50%] left-[-50%]"
-                    style={{
-                        background: 'conic-gradient(from 0deg, #ff00ff, #00ffff, #ffff00, #ff00ff)',
-                        animation: isPlaying ? 'spin 10s linear infinite' : 'none'
-                    }}
-                ></div>
-            </div>
-
+        <div className="w-full h-full bg-[#111] flex flex-col relative overflow-hidden font-mono">
             <MinigameHUD>
                 <div className="w-full flex justify-between items-center text-yellow-300">
-                    <span>DADA PLAYER v0.9</span>
+                    <span>DADA PLAYER</span>
                     <button onClick={onWin} className="pixel-button p-2 text-sm bg-red-800 hover:bg-red-700">ВЫХОД</button>
                 </div>
             </MinigameHUD>
 
-            {/* Main Player UI */}
-            <div className="z-10 bg-black border-4 border-gray-600 p-6 rounded-xl shadow-2xl max-w-md w-full flex flex-col gap-6 relative">
-                
-                {/* Screen Area */}
-                <div className="bg-[#2b2b2b] border-2 border-gray-700 p-4 rounded h-48 flex flex-col items-center justify-center relative overflow-hidden">
-                    {/* Visualizer Bars */}
-                    <div className="absolute bottom-0 left-0 w-full h-full flex items-end justify-between px-2 opacity-30 pointer-events-none">
-                        {visualizationData.map((h, i) => (
-                            <div 
-                                key={i} 
-                                className="w-1.5 bg-green-500 transition-all duration-75" 
-                                style={{ height: `${h}%` }}
-                            ></div>
-                        ))}
-                    </div>
-
-                    {/* Central Shape (Vinyl/Triangle) */}
-                    <div 
-                        className={`w-24 h-24 border-4 border-white flex items-center justify-center transition-all duration-500 ${isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''}`}
-                        style={{ borderRadius: '50%' }} // Circle
-                    >
-                        <div className="w-8 h-8 bg-red-500 transform rotate-45"></div>
-                    </div>
-
-                    {/* Track Info */}
-                    <div className="mt-4 text-center z-10">
-                        <h2 className="text-xl text-white font-bold tracking-widest uppercase truncate max-w-[250px]">
-                            {isPlaying ? "PLAYING..." : "PAUSED"}
-                        </h2>
-                        <p className="text-xs text-gray-400 font-mono mt-1">TRACK {currentTrackIndex + 1} / {CUSTOM_PLAYLIST.length}</p>
-                    </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-full h-2 bg-gray-800 rounded overflow-hidden">
-                    <div 
-                        className="h-full bg-yellow-400 transition-all duration-300 ease-linear"
-                        style={{ width: `${progress}%` }}
-                    ></div>
-                </div>
-
-                {/* Controls */}
-                <div className="flex justify-between items-center px-4">
-                    <button onClick={handleShuffle} className="text-gray-400 hover:text-white text-xl" title="Shuffle">🔀</button>
+            {/* --- KINETIC BACKGROUND LAYER --- */}
+            <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${isPlaying ? 'opacity-100' : 'opacity-0'}`}>
+                {particles.map(p => {
+                    // Fade in/out calculation
+                    let opacity = 1;
+                    if (p.life < 0.5) opacity = p.life / 0.5;
+                    else if (p.life > p.maxLife - 1) opacity = (p.maxLife - p.life);
                     
-                    <div className="flex items-center gap-4">
-                        <button onClick={handlePrev} className="pixel-button w-12 h-12 flex items-center justify-center text-2xl">⏮️</button>
-                        <button onClick={togglePlay} className="pixel-button w-16 h-16 flex items-center justify-center text-3xl bg-yellow-600 hover:bg-yellow-500 border-yellow-300">
-                            {isPlaying ? '⏸️' : '▶️'}
-                        </button>
-                        <button onClick={handleNext} className="pixel-button w-12 h-12 flex items-center justify-center text-2xl">⏭️</button>
-                    </div>
-
-                    <div className="w-6"></div> {/* Spacer for symmetry */}
-                </div>
+                    return (
+                        <div
+                            key={p.id}
+                            className="absolute font-bold text-center whitespace-nowrap"
+                            style={{
+                                left: `${p.x}%`,
+                                top: `${p.y}%`,
+                                transform: `translate(-50%, -50%) rotate(${p.rotation}deg)`,
+                                fontSize: `${p.size}rem`,
+                                color: p.color,
+                                opacity: opacity,
+                                textShadow: '2px 2px 0px #000'
+                            }}
+                        >
+                            {p.text}
+                        </div>
+                    );
+                })}
             </div>
 
-            {/* Lyric Flasher - Manifesto */}
-            {isPlaying && (
-                <div className="absolute top-24 w-full px-4 text-center pointer-events-none z-0">
-                    <span 
-                        key={lyricIndex} 
-                        className="text-2xl md:text-4xl font-black text-white/20 animate-[pulse_3s_infinite] block"
-                        style={{ textShadow: '0 0 10px rgba(255,255,255,0.2)' }}
-                    >
-                        {currentLyric}
-                    </span>
+            {/* --- COMPACT PLAYER UI --- */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-20">
+                <div className="bg-zinc-900 border-4 border-gray-500 rounded-lg shadow-[0_0_20px_rgba(0,0,0,0.8)] p-4 flex flex-col gap-3 relative overflow-hidden">
+                    
+                    {/* Metal Texture Overlay */}
+                    <div className="absolute inset-0 opacity-10 pointer-events-none" style={{backgroundImage: 'repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 2px)'}}></div>
+
+                    {/* Display */}
+                    <div className="bg-[#2b2b2b] border-2 border-gray-700 p-2 rounded flex flex-col items-center justify-center relative overflow-hidden h-16">
+                        <div className="text-green-400 font-mono text-xs w-full flex justify-between px-1 mb-1">
+                            <span>TRK {currentTrackIndex + 1}</span>
+                            <span>{isPlaying ? 'PLAY' : 'STOP'}</span>
+                        </div>
+                        <div className="w-full overflow-hidden relative">
+                            <p className="text-white text-lg whitespace-nowrap animate-[marquee_10s_linear_infinite]">
+                                {currentTrackName} +++ {currentTrackName} +++ {currentTrackName}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Progress */}
+                    <div className="w-full h-3 bg-black border border-gray-600 rounded-full overflow-hidden">
+                        <div 
+                            className="h-full bg-gradient-to-r from-yellow-600 to-yellow-300 transition-all duration-300 ease-linear"
+                            style={{ width: `${progress}%` }}
+                        ></div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex justify-between items-center px-1">
+                        <button onClick={handleShuffle} className="text-gray-500 hover:text-white text-xl active:scale-95" title="Shuffle">🔀</button>
+                        
+                        <div className="flex items-center gap-3">
+                            <button onClick={handlePrev} className="pixel-button w-10 h-10 flex items-center justify-center text-xl bg-gray-700">⏮️</button>
+                            <button 
+                                onClick={togglePlay} 
+                                className={`pixel-button w-14 h-14 flex items-center justify-center text-2xl border-2 ${isPlaying ? 'bg-yellow-600 border-yellow-300' : 'bg-green-700 border-green-400'}`}
+                            >
+                                {isPlaying ? '⏸️' : '▶️'}
+                            </button>
+                            <button onClick={handleNext} className="pixel-button w-10 h-10 flex items-center justify-center text-xl bg-gray-700">⏭️</button>
+                        </div>
+
+                        <div className="w-6"></div> {/* Spacer balance */}
+                    </div>
+                </div>
+            </div>
+            
+            {/* Ambient visual when paused (Static text) */}
+            {!isPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center z-0 opacity-20 pointer-events-none">
+                    <h1 className="text-9xl font-black text-gray-800 rotate-12">DADA</h1>
                 </div>
             )}
         </div>
