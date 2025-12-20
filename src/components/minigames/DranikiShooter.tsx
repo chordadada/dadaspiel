@@ -90,7 +90,8 @@ export const DranikiShooter: React.FC<{ onWin: () => void; onLose: () => void }>
     const { playSound, sensitivity, setSensitivityTutorial, sensitivityTutorial } = useSettings();
     const { isInstructionModalVisible } = useNavigation();
     const { character } = useSession();
-    const isMobile = useIsMobile();
+    // FIX: Destructure the object returned by useIsMobile
+    const { isMobile } = useIsMobile();
     
     // --- Random Motivational Start Message ---
     const startMessage = useMemo(() => {

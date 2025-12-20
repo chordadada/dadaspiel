@@ -81,6 +81,9 @@ export const DebugMenu: React.FC = () => {
                 <button onClick={() => handleActionClick(() => setScreen(GameScreen.CASE_SELECTION))} className="pixel-button p-2 text-sm bg-blue-700">
                     Выбор дела
                 </button>
+                <button onClick={() => handleActionClick(() => jumpToMinigame('bonus-player'))} className="pixel-button p-2 text-sm bg-pink-700 border-yellow-300">
+                    Dada Player
+                </button>
             </div>
 
             <h3 className="text-2xl mt-6 mb-2">Персонаж для отладки</h3>

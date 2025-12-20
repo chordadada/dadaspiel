@@ -16,6 +16,7 @@ import { FruktoviySpor } from './FruktoviySpor';
 import { NePodavis } from './NePodavis';
 import { ZasosPylesosa } from './ZasosPylesosa';
 import { DranikiShooter } from './DranikiShooter';
+import { DadaAudioPlayer } from './DadaAudioPlayer';
 
 // Это карта (объект), которая сопоставляет строковый ID мини-игры
 // (например, "1-1") с её React-компонентом.
@@ -36,4 +37,5 @@ export const minigameComponentMap: { [key: string]: React.FC<{ onWin: () => void
     "6-1": FruktoviySpor,
     "6-2": ZasosPylesosa, // Moved here
     "6-3": DranikiShooter, // New Finale
+    "bonus-player": DadaAudioPlayer, // New Audio Player
 };

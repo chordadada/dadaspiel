@@ -437,6 +437,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [activeProfile, logEvent, sessionScore, dynamicCases]);
 
     const nextMinigame = useCallback((noScore: boolean = false) => {
+        // Special Handling for Bonus Player which has a dummy case
+        if (currentCase?.id === 999) {
+            setScreen(GameScreen.CASE_SELECTION);
+            return;
+        }
+
         if (!currentCase || !activeProfileId) return;
         
         const newScore = noScore ? sessionScore : sessionScore + 250;
@@ -523,6 +529,25 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const killPlayer = useCallback(() => { if (isTransitioning.current) return; isTransitioning.current = true; playSound(SoundType.PLAYER_LOSE); logEvent("Player instantly killed."); setLives(0); setTimeout(() => confirmLogout(), 2000); }, [playSound, logEvent, confirmLogout]);
     
     const jumpToMinigame = useCallback((id: string) => {
+        // Handle Bonus Player explicitly
+        if (id === 'bonus-player') {
+            logEvent("Jumping to Bonus Player");
+            // Create a pseudo-case for the bonus player so currentCase logic holds
+            const bonusCase: CaseData = {
+                id: 999,
+                title: "БОНУС",
+                intro: "Музыкальная пауза",
+                outro: "Конец музыки",
+                minigames: [{ id: 'bonus-player', name: 'DADA PLAYER', intro: 'Слушайте.' }],
+                unlocks: -1
+            };
+            setCurrentCase(bonusCase);
+            setMinigameIndex(0);
+            setScreen(GameScreen.MINIGAME_PLAY);
+            setIsInstructionModalOpen(true);
+            return;
+        }
+
         for (const c of dynamicCases) {
             const mgIndex = c.minigames.findIndex(mg => mg.id === id);
             if (mgIndex !== -1) { 

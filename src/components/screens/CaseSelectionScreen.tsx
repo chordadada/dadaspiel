@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSession, useProfile, useSettings, useNavigation } from '../../context/GameContext';
 import { SoundType } from '../../utils/AudioEngine';
@@ -159,11 +160,13 @@ const sfc32 = (a: number, b: number, c: number, d: number) => {
 
 export const CaseSelectionScreen: React.FC = () => {
   const { character } = useSession();
-  const { activeProfile, dynamicCases } = useProfile();
-  const { playSound, seasonalEvent, seasonalAnimationsEnabled } = useSettings();
+  const { activeProfile, dynamicCases, profiles } = useProfile();
+  const { playSound, seasonalEvent, seasonalAnimationsEnabled, debugMode } = useSettings();
   const { jumpToMinigame } = useNavigation();
   const containerRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
+  
+  // FIX: Destructure the object returned by useIsMobile
+  const { isMobile } = useIsMobile();
 
   // --- State ---
   const [player, setPlayer] = useState({ x: 100, y: GROUND_LEVEL, vx: 0, vy: 0, grounded: true, facingRight: true });
@@ -282,20 +285,38 @@ export const CaseSelectionScreen: React.FC = () => {
           currentX += 150; 
       });
 
-      plats.push({ x: 1900, y: 250, w: 100, h: 20, type: 'standard' });
-      plats.push({ x: 2400, y: 300, w: 100, h: 20, type: 'standard' });
+      // Special Bonus Door (Dada Audio Player)
+      // Unlock condition: Either Debug Mode is ON, OR at least one profile has beaten the game.
+      // Moved to the START (x=150)
+      const anyGameCompleted = profiles.some(p => p.gameCompleted) || debugMode;
+      
+      if (anyGameCompleted) {
+          // Add platform for it
+          plats.push({ x: 150, y: 180, w: 100, h: 20, type: 'standard' });
+          doors.push({
+              id: 'bonus-player',
+              caseId: 999, // Pseudo ID
+              title: "DADA PLAYER",
+              x: 150,
+              y: 180,
+              artId: 99, // Special Art
+              hueRotate: 0
+          });
+      }
       
       return { allDoors: doors, platforms: plats, decorations: decos, stopSignX: calculatedStopSignX };
-  }, [dynamicCases, activeProfile, isNewYear]);
+  }, [dynamicCases, activeProfile, isNewYear, profiles, debugMode]);
 
   // --- Initial Player Position ---
   useEffect(() => {
+      // Logic to place player near next unlocked door, unless default spawn
+      // If returning from Bonus Player, logic should handle it naturally by proximity
       if (allDoors.length > 0 && activeProfile) {
-          let targetDoorX = 100;
+          let targetDoorX = 250; // Default near start
           let foundTarget = false;
 
           for (const door of allDoors) {
-              if (door.id === '3-2') continue; 
+              if (door.id === '3-2' || door.id === 'bonus-player') continue; 
               
               const parentCase = dynamicCases.find(c => c.minigames.some(m => m.id === door.id));
               if (parentCase) {
@@ -311,16 +332,20 @@ export const CaseSelectionScreen: React.FC = () => {
           }
           
           if (!foundTarget) {
-              const lastDoor = [...allDoors].reverse().find(d => d.id !== '3-2');
+              const lastDoor = [...allDoors].reverse().find(d => d.id !== '3-2' && d.id !== 'bonus-player');
               if (lastDoor) targetDoorX = lastDoor.x;
           }
 
-          setPlayer(p => ({ ...p, x: Math.max(100, targetDoorX - 100) }));
+          // Use requestAnimationFrame to ensure ref updates don't clash
+          requestAnimationFrame(() => {
+             setPlayer(p => ({ ...p, x: Math.max(100, targetDoorX - 100) }));
+          });
       }
-  }, []); 
+  }, []); // Run ONCE on mount
 
   // --- Helpers ---
   const isMinigameUnlocked = (targetId: string) => {
+      if (targetId === 'bonus-player') return true; // Already checked in generation logic
       if (!activeProfile) return false;
       const allMinigamesList = dynamicCases.flatMap(c => c.minigames);
       const targetIndex = allMinigamesList.findIndex(m => m.id === targetId);
@@ -335,6 +360,7 @@ export const CaseSelectionScreen: React.FC = () => {
   };
 
   const isMinigameCompleted = (targetId: string) => {
+      if (targetId === 'bonus-player') return false; // Infinite
       if (!activeProfile) return false;
       const parentCase = dynamicCases.find(c => c.minigames.some(m => m.id === targetId));
       if (!parentCase) return false;
@@ -616,6 +642,28 @@ export const CaseSelectionScreen: React.FC = () => {
                 const isActive = activeDoorId === door.id;
                 const badge = MINIGAME_BADGES[door.id] || "✅";
                 
+                // Special Bonus Door Rendering
+                if (door.id === 'bonus-player') {
+                    return (
+                        <div 
+                            key={door.id}
+                            className="absolute flex flex-col items-center z-20 cursor-pointer"
+                            style={{ left: door.x, bottom: door.y, transform: 'translateX(-50%)' }}
+                            onClick={(e) => { if(isActive) { e.stopPropagation(); handleInteract(); } }}
+                        >
+                            <div className={`mb-2 px-2 py-1 text-center bg-black/80 border rounded text-xs whitespace-nowrap transition-all duration-200 ${isActive ? 'border-pink-500 text-pink-400 scale-125' : 'border-gray-600 text-gray-500'}`}>
+                                {door.title}
+                            </div>
+                            {/* Giant Cassette or Ear */}
+                            <div className={`w-24 h-16 bg-zinc-800 border-4 border-zinc-600 rounded flex items-center justify-center relative transition-all duration-200 ${isActive ? 'scale-110 drop-shadow-[0_0_15px_rgba(255,0,255,0.5)]' : 'scale-100'}`}>
+                                <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-white border-4 border-black animate-[spin_4s_linear_infinite]"></div>
+                                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white border-4 border-black animate-[spin_4s_linear_infinite]"></div>
+                                <div className="w-12 h-4 bg-black/50"></div>
+                            </div>
+                        </div>
+                    );
+                }
+
                 if (door.id === '3-2') {
                     const shouldShow = seasonalEvent === SeasonalEvent.SEPTEMBER_3 || unlocked;
                     if (!shouldShow) return null; 

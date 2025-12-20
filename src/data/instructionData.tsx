@@ -265,5 +265,17 @@ export const instructionData: { [key: string]: { title: string; content: Instruc
                 <p className="text-yellow-400">Найдите секретную <strong>Картину 317</strong> на стене, чтобы полностью исцелиться (один раз за сон).</p>
             </>
         )
+    },
+    // Bonus
+    'bonus-player': {
+        title: "DADA AUDIO PLAYER",
+        content: () => (
+            <>
+                <p>Это не сон. Это музыкальная пауза.</p>
+                <p>Здесь вы можете прослушать все аудио-треки, найденные в подсознании игры.</p>
+                <p><strong>Названия треков сгенерированы случайно</strong> и не имеют никакого смысла. Как и всё остальное.</p>
+                <p className="text-pink-300">Наслаждайтесь вибрациями.</p>
+            </>
+        )
     }
 };

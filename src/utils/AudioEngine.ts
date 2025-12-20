@@ -96,7 +96,7 @@ export enum MusicType {
 }
 
 // !!! ВАЖНО: Файлы должны лежать в папке public/music/
-const CUSTOM_PLAYLIST = [
+export const CUSTOM_PLAYLIST = [
     'xdm1.mp3',
     'xdm2.mp3',
     'xdm3.mp3',
@@ -109,9 +109,16 @@ const CUSTOM_PLAYLIST = [
     'xdm10.mp3',
     'xdm11.mp3',
     'xdm12.mp3',
-		'xdm13.mp3',
+    'xdm13.mp3',
     'xdm14.mp3',
-    'xdm15.mp3'
+    'xdm15.mp3',
+    'xdm16.mp3',
+    'xdm17.mp3',
+    'xdm18.mp3',
+    'xdm19.mp3',
+    'xdm20.mp3',
+    'xdm21.mp3',
+    'xdm22.mp3'
 ];
 
 // --- Volume Constants ---
