@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { GameScreen, Character, SeasonalEvent } from './types';
 import { GameProvider, useNavigation, useSession, useProfile, useSettings } from './src/context/GameContext';
@@ -30,12 +31,12 @@ const getMusicForMinigame = (id: string): MusicType | null => {
     if (["1-1", "1-3"].includes(id)) return MusicType.AMBIENT_GALLERY;
     if (id === "1-2") return MusicType.AMBIENT_KVIR;
     if (id === "2-1") return MusicType.AMBIENT_DANCE;
-    if (id === "2-3") return MusicType.AMBIENT_ZEN;
+    if (id === "2-2") return MusicType.ROMANTIC_DOBRO; // Kiss of Dobro (Moved from 5-2)
     if (id === "3-1") return MusicType.AMBIENT_STREET; // Peaceful street ambience
     if (id === "4-1") return MusicType.AMBIENT_FEMINIST_FIGHT; // Word builder bass
     if (id === "4-2") return MusicType.FIGHT_CLUB_THEME; // Aggressive Breakbeat for Fight Club
     if (id === "5-1") return MusicType.AMBIENT_KITCHEN; // Bubbles
-    if (id === "5-2") return MusicType.ROMANTIC_DOBRO; // Cheesy romance
+    if (id === "5-2") return MusicType.AMBIENT_ZEN; // Dada Compliment (Moved from 2-3)
     if (id === "6-1") return MusicType.FRUIT_ARGUMENT; // Melodic puzzle
     if (id === "6-2") return MusicType.LOOP_VACUUM; // Modulated vacuum
     // 6-3 (Draniki) handles its own MP3 music internally in the component

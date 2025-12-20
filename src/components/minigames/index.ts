@@ -27,15 +27,15 @@ export const minigameComponentMap: { [key: string]: React.FC<{ onWin: () => void
     "1-2": KvirKontrol,
     "1-3": PoiskiKartiny317,
     "2-1": TanecUZakrytyhDverey,
-    "2-3": DadaisticheskiyKompliment,
+    "2-2": PoceluyDobra, // Moved here
     "3-1": ProhodKKino,
     "3-2": PereverniKalendar,
     "4-1": SoberiFeminitiv,
     "4-2": BoitsovskiyKlubFeminitivov,
-    "5-1": NePodavis, // Moved here to replace Aladki
-    "5-2": PoceluyDobra,
+    "5-1": NePodavis, 
+    "5-2": DadaisticheskiyKompliment, // Moved here
     "6-1": FruktoviySpor,
-    "6-2": ZasosPylesosa, // Moved here
-    "6-3": DranikiShooter, // New Finale
-    "bonus-player": DadaAudioPlayer, // New Audio Player
+    "6-2": ZasosPylesosa, 
+    "6-3": DranikiShooter, 
+    "bonus-player": DadaAudioPlayer, 
 };
