@@ -112,6 +112,7 @@ const WelcomeInstructionContent: React.FC<{ character?: Character | null; isMini
 // Component for the Tutorial Overlay
 const TutorialOverlay: React.FC<{ step: TutorialStep; onNext: () => void; seasonalEvent: SeasonalEvent }> = ({ step, onNext, seasonalEvent }) => {
     const [canContinue, setCanContinue] = useState(false);
+    const { isMobile } = useIsMobile();
 
     useEffect(() => {
         setCanContinue(false);
@@ -130,7 +131,11 @@ const TutorialOverlay: React.FC<{ step: TutorialStep; onNext: () => void; season
                     <div className="absolute top-14 left-1/2 -translate-x-1/2 text-6xl animate-bounce text-yellow-300">⬆️</div>
                     <div className="mt-20 bg-black/80 p-6 pixel-border max-w-md">
                         <h3 className="text-2xl text-yellow-300 mb-2">ЭТО ВИЗОР</h3>
-                        <p className="text-xl">Нажми на три точки сверху, чтобы показать/скрыть меню игры.</p>
+                        <p className="text-xl">
+                            {isMobile 
+                                ? "Нажми на три точки сверху, чтобы показать/скрыть меню игры." 
+                                : "Наведи курсор на три точки сверху, чтобы увидеть меню."}
+                        </p>
                     </div>
                 </>
             )}
@@ -219,7 +224,7 @@ const App: React.FC = () => {
     } = useSession();
     const { profileToDeleteId, profiles, confirmDeleteProfile, cancelDeleteProfile, isLogoutConfirmationVisible, confirmLogout, cancelLogout } = useProfile();
     const { debugMode, playSound, seasonalEvent, seasonalAnimationsEnabled, isPaused, setIsPaused, sensitivityTutorial } = useSettings();
-    const { isIOS } = useIsMobile();
+    const { isIOS, isMobile } = useIsMobile();
     const [isInitialLaunch, setIsInitialLaunch] = useState(false);
     
     // Tutorial State
@@ -392,7 +397,10 @@ const App: React.FC = () => {
                         highlightControls={tutorialStep === TutorialStep.FULLSCREEN || tutorialStep === TutorialStep.CONTROLS}
                         highlightFullscreen={tutorialStep === TutorialStep.FULLSCREEN}
                         onVisorClick={() => {
-                            if (tutorialStep === TutorialStep.VISOR) advanceTutorial();
+                            if (isMobile && tutorialStep === TutorialStep.VISOR) advanceTutorial();
+                        }}
+                        onVisorMouseEnter={() => {
+                            if (!isMobile && tutorialStep === TutorialStep.VISOR) advanceTutorial();
                         }}
                         onFullscreenClick={() => {
                             if (tutorialStep === TutorialStep.FULLSCREEN) advanceTutorial();

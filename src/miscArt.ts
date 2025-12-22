@@ -128,6 +128,26 @@ export const GUARD_ART_DATA = [
 "   bbb    bbb     ",
 ];
 
+export const DOBRO_ART_DATA = [
+    "      hhhhhh      ",
+    "     hssssssh     ",
+    "    hssddddssh    ",
+    "    ssbbbbbbss    ",
+    "    ssbw  wbss    ",
+    "    ssddddddss    ",
+    "     sddmmsds     ",
+    "      sdddds      ",
+    "    bbbbRRbbbb    ",
+    "   bbbbRRRRbbbb   ",
+    "  bbbbRRRRRRbbbb  ",
+    "  bbbbRRRRRRbbbb  ",
+    "  bbbbbbbbbbbbbb  ",
+    "   bbbbbbbbbbbb   ",
+    "    bbbb  bbbb    ",
+    "    bbbb  bbbb    ",
+    "   bbbb    bbbb   "
+];
+
 // Mini guard art for 'Tanec u Zakrytyh Dverey' minigame
 export const MINI_GUARD_ART = [ // 6x9
   " wwww ",

@@ -2,18 +2,10 @@
 import React from 'react';
 import { Character } from '../../types';
 
-// The Fruit component from FruktoviySpor.tsx, needed for its instructions.
-const Fruit: React.FC<{ data: any; isPreview?: boolean }> = ({ data, isPreview = false }) => (
-    <div style={{ width: isPreview ? '150px' : '50px', height: isPreview ? '150px' : '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', borderRadius: data.shape === 'oval' ? '50% / 70%' : '50%', background: data.color, border: `${isPreview ? 4 : 2}px solid black`, boxShadow: '4px 4px 0px #00000080' }}>
-        <span className="text-black font-bold" style={{ fontSize: isPreview ? '5rem' : '1.5rem' }}>{data.letter}</span>
-    </div>
-);
-
-
 interface InstructionProps {
     character?: Character | null;
     isMinigameInverted?: boolean;
-    currentRound?: any; // A bit generic, but should work for FruktoviySpor
+    currentRound?: any;
     round?: number;
     isSensitivityTutorialActive?: boolean;
 }
@@ -21,7 +13,20 @@ interface InstructionProps {
 type InstructionComponent = React.FC<InstructionProps>;
 
 export const instructionData: { [key: string]: { title: string; content: InstructionComponent } } = {
-    // Case 1
+    // ... existing instructions ...
+    '6-1': {
+        title: "ФРУКТОВЫЙ СПОР",
+        content: () => (
+            <>
+                <p>В споре рождается истина, но только если у вас правильные аргументы!</p>
+                <p><strong>Цель:</strong> Набрать больше очков, чем оппонент, к концу таймера.</p>
+                <p>Вы можете защищать только <strong>3 аргумента</strong> одновременно. Четвёртый аннулирует первый.</p>
+                <p>Каждые несколько секунд правило меняется. В этот момент каждый аргумент приносит +1, ничего или -1.</p>
+                <p className="text-yellow-400">Следите за антиподами: Красный против Синего, Зелёный против Жёлтого. Фиолетовый — это сюрприз!</p>
+            </>
+        )
+    },
+    // ... rest of the file ...
     '1-1': {
         title: "ПРАВИЛА ГАЛЕРЕИ",
         content: () => (
@@ -55,7 +60,6 @@ export const instructionData: { [key: string]: { title: string; content: Instruc
                     </>
                 );
             }
-            // Kanila
             return (
                 <>
                     <p>Фигуры внизу постоянно мутируют (Круг → Квадрат → Звезда...).</p>
@@ -77,7 +81,6 @@ export const instructionData: { [key: string]: { title: string; content: Instruc
             </>
         )
     },
-    // Case 2
     '2-1': {
         title: "ПРАВИЛА ТАНЦ-БАТТЛА",
         content: () => (
@@ -105,7 +108,6 @@ export const instructionData: { [key: string]: { title: string; content: Instruc
             </>
         )
     },
-    // Case 3
     '3-1': {
         title: "ПРОХОД К КИНО",
         content: ({ isMinigameInverted }) => (
@@ -132,7 +134,6 @@ export const instructionData: { [key: string]: { title: string; content: Instruc
             </>
         )
     },
-    // Case 4
     '4-1': {
         title: "СОБЕРИ ФЕМИНИТИВ",
         content: () => (
@@ -154,7 +155,6 @@ export const instructionData: { [key: string]: { title: string; content: Instruc
             </>
         )
     },
-    // Case 5
     '5-1': {
         title: "НЕ ПОДАВИСЬ!",
         content: ({ character }) => {
@@ -190,42 +190,6 @@ export const instructionData: { [key: string]: { title: string; content: Instruc
                 <p className="text-yellow-400">Есть шанс получить дополнительную жизнь. Или нет.</p>
             </>
         )
-    },
-    // Case 6
-    '6-1': {
-        title: "ФРУКТОВЫЙ СПОР",
-        content: ({ character }) => {
-            if (character === Character.BLACK_PLAYER) {
-                return (
-                    <>
-                        <p><strong>Цель:</strong> выжить до истечения времени, сохранив свою <strong>[ЦЕЛОСТНОСТЬ]</strong>.</p>
-                        <p>Двигайте «Обычного Игрока» (курсором или пальцем) влево-вправо.</p>
-                        <p>Ловите или избегайте падающие концепции, следуя указаниям вверху (например, "ИЗБЕГАЙ: ЛОГИКУ"). Каждая ошибка уменьшает вашу Целостность.</p>
-                        <p className="text-red-500">Если шкала Целостности опустеет, вы будете сломлены.</p>
-                    </>
-                );
-            }
-            if (character === Character.KANILA) {
-                return (
-                    <>
-                        <p><strong>Цель:</strong> устроить балаган и выиграть в споре, заполнив шкалу аргумента.</p>
-                        <p>Двигайте корзину (курсором или пальцем).</p>
-                        <p>Следуйте правилам вверху, но будьте начеку: они могут <strong>мерцать и меняться!</strong></p>
-                        <p>Иногда неправильные действия засчитываются как правильные (и наоборот). Это концептуальный глюк!</p>
-                        <p className="text-yellow-400">Ловите символ <strong>"Ў"</strong> для большого бонуса!</p>
-                    </>
-                );
-            }
-            // Default for Sexism
-            return (
-                <>
-                    <p><strong>Цель:</strong> доказать свою правоту через эстетику, заполнив шкалу аргумента.</p>
-                    <p>Двигайте корзину (курсором или пальцем).</p>
-                    <p>Правила теперь основаны на визуальных характеристиках: цветах и формах (например, <span className="text-yellow-300">"ЛОВИ: ТЁПЛЫЕ ЦВЕТА"</span>).</p>
-                    <p><strong>ВНИМАНИЕ:</strong> каждые 10-15 секунд <strong>визуальный стиль</strong> сна будет меняться, заставляя вас адаптироваться к новому виду объектов.</p>
-                </>
-            );
-        }
     },
     '6-2': {
         title: "ЗАСОС ПЫЛЕСОСА",
@@ -266,7 +230,6 @@ export const instructionData: { [key: string]: { title: string; content: Instruc
             </>
         )
     },
-    // Bonus
     'bonus-player': {
         title: "DADA AUDIO PLAYER",
         content: () => (

@@ -10,6 +10,7 @@ interface HUDProps {
     highlightControls?: boolean;
     highlightFullscreen?: boolean;
     onVisorClick?: () => void;
+    onVisorMouseEnter?: () => void;
     onFullscreenClick?: () => void;
 }
 
@@ -18,6 +19,7 @@ export const HUD: React.FC<HUDProps> = ({
     highlightControls = false, 
     highlightFullscreen = false,
     onVisorClick, 
+    onVisorMouseEnter,
     onFullscreenClick 
 }) => {
   const { 
@@ -102,6 +104,7 @@ export const HUD: React.FC<HUDProps> = ({
         hideTimerRef.current = null;
     }
     setIsHovering(true);
+    if (onVisorMouseEnter) onVisorMouseEnter();
   };
 
   const handleMouseLeave = () => {
