@@ -23,14 +23,14 @@ const BASE_DIFFICULTY = {
         spawnRate: 0.04,
         ruleInterval: 8,
         catchWidth: 8,
-        aiPrecision: 0.15,
+        aiPrecision: 0.2,
     },
     [Character.BLACK_PLAYER]: {
         fallSpeed: 23,
         spawnRate: 0.05,
         ruleInterval: 7,
         catchWidth: 7,
-        aiPrecision: 0.2,
+        aiPrecision: 0.3,
     }
 };
 
