@@ -285,7 +285,6 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
     const itemIdCounter = useRef(0);
     const aiTargetX = useRef(50);
     const aiDecisionTimer = useRef(0);
-    const keysPressed = useRef<{ [key: string]: boolean }>({});
    
     // --- Smooth Movement Refs ---
     const targetPlayerX = useRef(50);
@@ -309,14 +308,6 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
         }, 1000);
         return () => clearInterval(timer);
     }, [isInstructionModalVisible, status]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => { keysPressed.current[e.code] = true; };
-        const handleKeyUp = (e: KeyboardEvent) => { keysPressed.current[e.code] = false; };
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
-        return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
-    }, []);
 
     const evaluateBaskets = useCallback(() => {
         const pPoints = playerBasket.reduce((sum, item) => sum + (item ? currentRule.evaluate(item) : 0), 0);
