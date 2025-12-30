@@ -415,21 +415,7 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
         }
     };
 
-    // --- RENDER ---
-
-    if (status === 'won') {
-        const winProps = { onContinue: onWin, onPlayVideo: () => setVideoUrl("https://www.youtube.com/watch?v=29p14n_qeN0"), character };
-        return (
-            <>
-                {character === Character.BLACK_PLAYER ? <BlackPlayerBecomingWinScreen {...winProps} /> : <FruktoviySporWinScreen {...winProps} />}
-                {videoUrl && <VideoModal url={videoUrl} onClose={() => setVideoUrl(null)} />}
-            </>
-        );
-    }
-
-    if (status === 'lost') {
-        return <FruktoviySporLoseScreen onRetry={onLose} character={character} />;
-    }
+    const handleWinContinue = () => { playSound(SoundType.BUTTON_CLICK); onWin(); };
 
     return (
         <div ref={gameAreaRef} 
@@ -518,6 +504,7 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
                     <div className="text-9xl font-black text-white animate-ping">{countdown > 0 ? countdown : "СПОРИМ!"}</div>
                 </div>
             )}
+            {videoUrl && <VideoModal url={videoUrl} onClose={() => setVideoUrl(null)} />}
         </div>
     );
 };
