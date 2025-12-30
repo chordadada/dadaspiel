@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useProfile, useNavigation, useSettings } from '../../context/GameContext';
 import { GameScreen } from '../../../types';
@@ -55,6 +56,11 @@ export const ProfileSelectionScreen: React.FC = () => {
         setScreen(GameScreen.LEADERBOARD);
     }
 
+    const handleAboutProject = () => {
+        playSound(SoundType.BUTTON_CLICK);
+        setScreen(GameScreen.ABOUT_PROJECT);
+    }
+
     return (
         <div className="flex flex-col items-center justify-center h-full p-8">
             <Title onTitleClick={handleTitleClick} />
@@ -84,12 +90,15 @@ export const ProfileSelectionScreen: React.FC = () => {
                     <p className="text-center text-gray-400">Профилей пока нет. Создайте новый!</p>
                 )}
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
                  <button onClick={handleNewGame} className="pixel-button p-4 text-2xl">
                     Создать
                 </button>
                  <button onClick={handleLeaderboard} className="pixel-button p-4 text-2xl bg-teal-700">
                     Рекорды
+                </button>
+                <button onClick={handleAboutProject} className="pixel-button p-4 text-2xl bg-purple-700">
+                    О проекте
                 </button>
             </div>
         </div>

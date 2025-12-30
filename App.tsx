@@ -23,6 +23,7 @@ import { FinalEnding } from './src/components/screens/FinalEnding';
 import { DebugMenu } from './src/components/screens/DebugMenu';
 import { LogView } from './src/components/screens/LogView';
 import { DebugAnimationViewer } from './src/components/screens/DebugAnimationViewer';
+import { AboutProjectScreen } from './src/components/screens/AboutProjectScreen';
 
 import { minigameComponentMap } from './src/components/minigames';
 
@@ -295,7 +296,7 @@ const App: React.FC = () => {
             const musicType = getMusicForMinigame(currentMinigame.id);
             if (musicType !== null) startMusic(musicType);
             else if (currentMinigame.id !== "6-3") stopMusic();
-        } else if (screen === GameScreen.PROFILE_SELECTION || screen === GameScreen.CASE_SELECTION || screen === GameScreen.LEADERBOARD) {
+        } else if (screen === GameScreen.PROFILE_SELECTION || screen === GameScreen.CASE_SELECTION || screen === GameScreen.LEADERBOARD || screen === GameScreen.ABOUT_PROJECT) {
             const seasonalMusic = getSeasonalMusic(seasonalEvent);
             // Prevent holiday music from playing during the tutorial
             if (seasonalAnimationsEnabled && seasonalMusic !== null && tutorialStep === TutorialStep.NONE) {
@@ -333,6 +334,8 @@ const App: React.FC = () => {
                 return <ProfileSelectionScreen />;
             case GameScreen.LEADERBOARD:
                 return <LeaderboardScreen />;
+            case GameScreen.ABOUT_PROJECT:
+                return <AboutProjectScreen />;
             case GameScreen.START_SCREEN:
                 return <StartScreen />;
             case GameScreen.CASE_SELECTION:
