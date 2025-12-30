@@ -10,7 +10,7 @@ export const Title: React.FC<{ onTitleClick: () => void }> = ({ onTitleClick }) 
         if (!seasonalAnimationsEnabled) return "ДАДАШПИЛЬ";
 
         switch (seasonalEvent) {
-            case SeasonalEvent.NEW_YEAR: return "ДАДАГАДНОВ";
+            case SeasonalEvent.NEW_YEAR: return "🍊ДАДАШПИЛЬ🍾";
             case SeasonalEvent.APRIL_FOOLS: return "ОТЧЁТ О ШПИЛЕ №317";
             case SeasonalEvent.HALLOWEEN: return "ДАДАШРЭКЛ";
             case SeasonalEvent.DADA_BIRTHDAY: return "ДАДРДАДР";

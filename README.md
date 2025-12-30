@@ -1,4 +1,4 @@
-# ДАДАШПИЛЬ 2.0
+# ДАДАШПИЛЬ 0.0
 
 > **"Искусство — это когда не надо понимать."**
 
@@ -7,8 +7,10 @@
 ![Vite](https://img.shields.io/badge/Vite-Fast-yellow)
 ![License](https://img.shields.io/badge/License-Dada_MIT-red)
 ![Status](https://img.shields.io/badge/Status-Absurd-purple)
+[![YouTube](https://img.shields.io/badge/YouTube-%23FF0000.svg?style=for-the-badge&logo=YouTube&logoColor=white)](https://www.youtube.com/@chordadada)
+[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/chordadada)
 
-**ДАДАШПИЛЬ** — это веб-приложение, замаскированное под игру. Это сюрреалистический опыт, биоэксперимент и интерактивный манифест, основанный на лоре YouTube-канала "Хорда Дадаизма".
+**ДАДАШПИЛЬ** — это вам не это, замаскированное под игру. Срюреалистический опыт, биоэксперимент и интерактивный манифест по мотивам похуждений широкобезызвестного антиподадаистического конвектива "Хорда Дадаизма".
 
 ---
 
