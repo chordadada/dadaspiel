@@ -110,7 +110,7 @@ export const FruktoviySporWinScreen: React.FC<{ onContinue: () => void; onPlayVi
     // KANILA (Anarchic/Street)
     if (character === Character.KANILA) {
         return (
-            <div className="absolute inset-0 bg-zinc-900 z-[120] flex flex-col items-center justify-center text-center p-4 overflow-hidden">
+            <div className="absolute inset-0 bg-zinc-900 z-30 flex flex-col items-center justify-center text-center p-4 overflow-hidden">
                 <style>{`
                     @keyframes spray-drip { 0% { height: 0px; } 100% { height: 40px; } }
                     .drip { position: absolute; width: 4px; background: #ef4444; animation: spray-drip 2s ease-out forwards; }
@@ -136,7 +136,7 @@ export const FruktoviySporWinScreen: React.FC<{ onContinue: () => void; onPlayVi
     // SEXISM (Glamour/TV)
     if (character === Character.SEXISM) {
         return (
-            <div className="absolute inset-0 bg-fuchsia-900 z-[120] flex flex-col items-center justify-center text-center p-4 overflow-hidden">
+            <div className="absolute inset-0 bg-fuchsia-900 z-30 flex flex-col items-center justify-center text-center p-4 overflow-hidden">
                 <style>{`
                     @keyframes spotlight-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                     .spotlight-bg { background: conic-gradient(from 0deg at 50% 50%, #701a75 0deg, #a21caf 60deg, #701a75 120deg, #a21caf 180deg, #701a75 240deg, #a21caf 300deg, #701a75 360deg); animation: spotlight-spin 10s linear infinite; }
@@ -158,7 +158,7 @@ export const FruktoviySporWinScreen: React.FC<{ onContinue: () => void; onPlayVi
 
     // Fallback / Generic
     return (
-        <div className="absolute inset-0 bg-black/90 z-[110] flex flex-col items-center justify-center text-center p-4">
+        <div className="absolute inset-0 bg-black/90 z-30 flex flex-col items-center justify-center text-center p-4">
             <h2 className="text-6xl text-yellow-400 mb-4 animate-bounce">ПОБЕДА В СПОРЕ!</h2>
             <div className="flex gap-4">
                 <button onClick={onPlayVideo} className="pixel-button p-3 text-xl bg-purple-700">ДОКАЗАТЕЛЬСТВА</button>
@@ -172,7 +172,7 @@ export const BlackPlayerBecomingWinScreen: React.FC<{ onContinue: () => void; on
     const { playSound } = useSettings();
     useEffect(() => { playSound(SoundType.WIN_FRUKTY); }, [playSound]);
     return (
-        <div className="absolute inset-0 bg-black z-[110] flex flex-col items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-black z-30 flex flex-col items-center justify-center overflow-hidden">
             <style>{`
                 @keyframes glitch-bg-red { 0% { background: #000; } 10% { background: #300; } 20% { background: #000; } 100% { background: #000; } }
             `}</style>
@@ -211,7 +211,7 @@ const FruktoviySporLoseScreen: React.FC<{ onRetry: () => void; character: Charac
     }
 
     return (
-        <div className={`absolute inset-0 z-[120] flex flex-col items-center justify-center ${bgColor} overflow-hidden animate-[fadeIn_0.3s]`}>
+        <div className={`absolute inset-0 z-30 flex flex-col items-center justify-center ${bgColor} overflow-hidden animate-[fadeIn_0.3s]`}>
             <div className="absolute inset-0 bg-black/50"></div>
             
             <div className="z-10 flex flex-col items-center">
@@ -355,21 +355,15 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
 
         // Update Rule Timer using Ref for accuracy
         ruleTimerRef.current -= dtSec;
-        if (ruleTimerRef.current <= 0) {
-            changeRule();
-        } else {
-            setRuleTimer(ruleTimerRef.current);
-        }
-				
-        // --- Player Movement (Keyboard Input to Target) ---
-        if (keysPressed.current['ArrowLeft']) targetPlayerX.current = Math.max(10, targetPlayerX.current - 100 * dtSec);
-        if (keysPressed.current['ArrowRight']) targetPlayerX.current = Math.min(90, targetPlayerX.current + 100 * dtSec);
+        if (ruleTimerRef.current <= 0) changeRule();
+        else setRuleTimer(ruleTimerRef.current);
 
-        // --- Smooth Movement (LERP) ---
-        // Lerp factor depends on dt to be frame-rate independent
-        // formula: current = lerp(current, target, 1 - exp(-lambda * dt))
-        const smoothFactor = 1 - Math.exp(-15 * dtSec); // 15 is stiffness
+        // Плавное следование за целью (LERP) - ускорено для мгновенной реакции
+        const smoothFactor = 1 - Math.pow(0.0001, dtSec); 
         setPlayerX(prev => prev + (targetPlayerX.current - prev) * smoothFactor);
+
+        // AI Lerp
+        setAiX(prev => prev + (aiTargetX.current - prev) * diff.aiPrecision);
 
         // Спад предметов (80% зона, т.е. 10-90%)
         if (Math.random() < diff.spawnRate) {
@@ -415,26 +409,18 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
             aiTargetX.current = targets.length > 0 ? targets[0].x : 10 + Math.random() * 80;
             aiDecisionTimer.current = 0.4 + Math.random() * 0.4;
         }
-        // AI also uses simple lerp/move-towards logic
-        setAiX(prev => prev + (aiTargetX.current - prev) * diff.aiPrecision);
+
 
     }, [status, playerX, aiX, playerItems, aiItems, currentRule, changeRule, playSound, diff, itemPool, isPaused, isInstructionModalVisible, playerScore, aiScore]), status === 'playing');
 
-    const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
+    // Универсальный обработчик Pointer Events
+    const handlePointerMove = (e: React.PointerEvent) => {
         if (gameAreaRef.current && status === 'playing' && !isPaused) {
             const rect = gameAreaRef.current.getBoundingClientRect();
-            const pointer = 'touches' in e ? e.touches[0] : e;
-            const relativeX = (pointer.clientX - rect.left) / rect.width;
-            
-            // Map pointer to 10-90 range, but relative to side
-            // Right side plays as player
-            if (relativeX >= 0.5) {
-                // normalize 0.5-1.0 to 0-1
-                const normalized = (relativeX - 0.5) * 2;
-                // map to 10-90
-                const target = 10 + normalized * 80;
-                targetPlayerX.current = Math.max(10, Math.min(90, target));
-            }
+            // На мобильных палец часто закрывает фигурку, поэтому берем только X координату
+            // Вычисляем положение курсора/пальца относительно всего экрана и проецируем на шкалу 0-100
+            const rawX = ((e.clientX - rect.left) / rect.width) * 100;
+            targetPlayerX.current = Math.max(5, Math.min(95, rawX));
         }
     };
 
@@ -455,9 +441,18 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
     }
 
     return (
-        <div ref={gameAreaRef} className="w-full h-full relative overflow-hidden bg-[#120a04] flex flex-col select-none touch-none" onMouseMove={handlePointerMove} onTouchMove={handlePointerMove}>
+        <div ref={gameAreaRef} 
+             className="w-full h-full relative overflow-hidden flex flex-col select-none touch-none cursor-none" 
+             style={{ backgroundColor: bgColor, touchAction: 'none' }}
+             onPointerMove={handlePointerMove} 
+             onPointerDown={handlePointerMove}
+        >
             
             {/* ШАПКА ХАБА */}
+						 <style>{`
+                /* Убираем любые CSS переходы для мгновенного следования */
+                .no-delay { transition: none !important; }
+            `}</style>
             <div className="w-full bg-black/70 p-4 border-b-2 border-orange-900/30 flex flex-col items-center z-30 shadow-2xl">
                 <div className="flex justify-between items-center w-full max-w-6xl px-4 relative">
                     {/* Слева: Название правила */}
@@ -500,7 +495,7 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
                             {it.arg.char}
                         </div>
                     ))}
-                    <div className="absolute bottom-[4%] transition-all duration-75" style={{ left: `${aiX}%`, transform: 'translateX(-50%)' }}>
+                    <div className="absolute bottom-[4%] no-delay" style={{ left: `${aiX}%`, transform: 'translateX(-50%)' }}>
                         <div className="transform scale-x-[-1]"><CharacterArt character={character} isOpponent /></div>
                         <div className="w-16 h-2 bg-black/40 rounded-full blur-sm mt-1 mx-auto"></div>
                     </div>
@@ -521,7 +516,7 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
                             {it.arg.char}
                         </div>
                     ))}
-                    <div className="absolute bottom-[4%] transition-all duration-75" style={{ left: `${playerX}%`, transform: 'translateX(-50%)' }}>
+                    <div className="absolute bottom-[4%] no-delay" style={{ left: `${playerX}%`, transform: 'translateX(-50%)' }}>
                         <CharacterArt character={character} />
                         <div className="w-16 h-2 bg-black/40 rounded-full blur-sm mt-1 mx-auto"></div>
                     </div>
@@ -530,7 +525,7 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
 
             {/* Обратный отсчет */}
             {status === 'countdown' && !isInstructionModalVisible && (
-                <div className="absolute inset-0 bg-black/60 z-[120] flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/60 z-40 flex items-center justify-center">
                     <div className="text-9xl font-black text-white animate-ping">{countdown > 0 ? countdown : "СПОРИМ!"}</div>
                 </div>
             )}
