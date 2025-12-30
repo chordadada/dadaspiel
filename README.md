@@ -6,9 +6,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 ![Vite](https://img.shields.io/badge/Vite-Fast-yellow)
 ![License](https://img.shields.io/badge/License-Dada_MIT-red)
-![Status](https://img.shields.io/badge/Status-Absurd-purple)
-[![YouTube](https://img.shields.io/badge/YouTube-%23FF0000.svg?style=for-the-badge&logo=YouTube&logoColor=white)](https://www.youtube.com/@chordadada)
-[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/chordadada)
+![Status](https://img.shields.io/badge/Status-DADA-purple)
 
 **ДАДАШПИЛЬ** — это вам не это, замаскированное под игру. Срюреалистический опыт, биоэксперимент и интерактивный манифест по мотивам похуждений широкобезызвестного антиподадаистического конвектива "Хорда Дадаизма".
 
@@ -70,6 +68,20 @@
     ```
 
 4.  Откройте браузер и ВЫЙДИТЕ ИЗ ТЕЛЕВИЗОРА (перейдите по адресу `http://localhost:5173`).
+
+---
+
+## 🌐 СВЯЗЬ С ПУСТОТОЙ
+
+[![YouTube](https://img.shields.io/badge/YouTube-%23FF0000.svg?style=for-the-badge&logo=YouTube&logoColor=white)](https://www.youtube.com/@chordadada)
+[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/chordadada)
+[![Instagram](https://img.shields.io/badge/Instagram-%23E4405F.svg?style=for-the-badge&logo=Instagram&logoColor=white)](https://www.instagram.com/chordadada)
+[![VK](https://img.shields.io/badge/VK-%234680C2.svg?style=for-the-badge&logo=VK&logoColor=white)](https://vk.com/chordadada)
+[![SoundCloud](https://img.shields.io/badge/SoundCloud-%23FF3300.svg?style=for-the-badge&logo=SoundCloud&logoColor=white)](https://soundcloud.com/soundadada)
+[![Facebook](https://img.shields.io/badge/Facebook-%231877F2.svg?style=for-the-badge&logo=Facebook&logoColor=white)](https://www.facebook.com/chorda.dadaisme/)
+
+[![Spotify Rus](https://img.shields.io/badge/Spotify_Pod_Rus-1ED760?style=for-the-badge&logo=spotify&logoColor=white)](https://open.spotify.com/show/2tnJSAoaoDoCEshJjVLsph)
+[![Spotify Eng](https://img.shields.io/badge/Spotify_Pod_Eng-1ED760?style=for-the-badge&logo=spotify&logoColor=white)](https://open.spotify.com/show/7qJJJBKML70xiqyJSCh2DZ)
 
 ---
 
