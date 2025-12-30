@@ -438,9 +438,7 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
              onPointerMove={handlePointerMove} 
              onPointerDown={handlePointerMove}
         >
-            
-            {/* ШАПКА ХАБА */}
-						 <style>{`
+            <style>{`
                 /* Убираем любые CSS переходы для мгновенного следования */
                 .no-delay { transition: none !important; }
             `}</style>
