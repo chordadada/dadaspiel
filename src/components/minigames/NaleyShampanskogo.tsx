@@ -375,7 +375,7 @@ export const NaleyShampanskogo: React.FC<{ onWin: () => void; onLose: () => void
     const [glassPos, setGlassPos] = useState({ x: 0, y: 0 });
     const [fill, setFill] = useState(0);
     const [timeLeft, setTimeLeft] = useState(25);
-    const [status, setStatus] = useState<'playing' | 'won'>('playing');
+    const [status, setStatus] = useState<'playing' | 'won' | 'lost'>('playing');
     const [particles, setParticles] = useState<any[]>([]);
     const [easterEggStage, setEasterEggStage] = useState(0);
     const [speechBubble, setSpeechBubble] = useState({ text: '', visible: false });
@@ -403,8 +403,13 @@ export const NaleyShampanskogo: React.FC<{ onWin: () => void; onLose: () => void
             const isTouchEvent = 'touches' in e;
             const pointer = isTouchEvent ? e.touches[0] : e;
             if (pointer) {
-                // Смещаем бокал вверх при касании, чтобы палец не закрывал его.
-                const yOffset = isTouchEvent ? 100 : 0; 
+                // Dynamic Sliding Grip for mobile:
+                // If yRatio is 0 (top), we hold the bottom of the glass (offset is large).
+                // If yRatio is 1 (bottom), we hold the top of the glass (offset is negative).
+                // This allows the player to reach the absolute bottom of the screen while keeping the finger above the glass.
+                const yRatio = (pointer.clientY - rect.top) / rect.height;
+                const yOffset = isTouchEvent ? 100 - (yRatio * 150) : 0; 
+                
                 setGlassPos({ 
                     x: pointer.clientX - rect.left, 
                     y: (pointer.clientY - rect.top) - yOffset 
