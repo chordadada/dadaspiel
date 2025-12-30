@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { STROITELNIE_TERMINY } from '../../data/wordData';
@@ -236,7 +235,11 @@ export const ProhodKKino: React.FC<{ onWin: () => void; onLose: () => void; isMi
     // Генерация препятствий для каждого раунда.
     useEffect(() => {
         const newObstacles: Obstacle[] = []; const numObstacles = 10 + round * 4;
-        const obstaclePools = { person: ['🚶', '🏃', '🧍', '🧑‍🤝‍🧑', '🧎', '💃', '🕺', '🤸', '🧗', '🧘', '👨‍👩‍👧‍👦', '🤾', '👩‍🦽', '👨‍🦯'], animal: ['🦇', '🐈', '🐀', '🐍', '������️', '🦂', '🐕', '🐩', '🐅', '🐊', '🦥', '🐌', '🦀', '🦑', '🐘'], concept: STROITELNIE_TERMINY };
+        const obstaclePools = { 
+            person: ['🚶', '🏃', '🧍', '🧑‍🤝‍🧑', '🧎', '💃', '🕺', '🤸', '🧗', '🧘', '👨‍👩‍👧‍👦', '🤾', '👩‍🦽', '👨‍🦯'], 
+            animal: ['🦇', '🐈', '🐀', '🐍', '🕷️', '🦂', '🐕', '🐩', '🐅', '🐊', '🐒', '🐌', '🦀', '🐖', '🐘'], 
+            concept: STROITELNIE_TERMINY 
+        };
         const types: ('person' | 'animal' | 'concept')[] = ['person', 'animal', 'concept']; const typeForRound = types[round - 1]; const size = typeForRound === 'concept' ? 20 : (round < 3 ? 45 : 30);
         for (let i = 0; i < numObstacles; i++) {
             const pool = obstaclePools[typeForRound];
@@ -245,18 +248,17 @@ export const ProhodKKino: React.FC<{ onWin: () => void; onLose: () => void; isMi
         setObstacles(newObstacles);
     }, [round, settings.obstacleSpeedMultiplier]);
     
-    const handlePointerMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    // Unified Pointer Move Handler
+    const handlePointerMove = (e: React.PointerEvent) => {
         if (gameStatus !== 'playing' || !gameAreaRef.current) return;
-        e.preventDefault();
         const rect = gameAreaRef.current.getBoundingClientRect();
-        const pointer = 'touches' in e ? e.touches[0] : e;
-        if (!pointer) return;
-        const y = ((pointer.clientY - rect.top) / rect.height) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
         setPlayer(p => ({ ...p, y: Math.max(0, Math.min(100, y)) }));
     };
 
-    // В 3 раунде клик меняет направление движения препятствий.
-    const handleObstacleClick = () => { 
+    // В 3 раунде клик (или тап) меняет направление движения препятствий.
+    const handleActionDown = (e: React.PointerEvent) => { 
+        handlePointerMove(e); // Sync position on tap
         if (round === 3 && gameStatus === 'playing') {
             playSound(SoundType.GENERIC_CLICK);
             setObstacles(obs => obs.map(o => ({ ...o, vy: -o.vy }))); 
@@ -351,11 +353,9 @@ export const ProhodKKino: React.FC<{ onWin: () => void; onLose: () => void; isMi
     return (
         <div 
             ref={gameAreaRef} 
-            onMouseMove={handlePointerMove} 
-            onTouchMove={handlePointerMove} 
-            onTouchStart={handlePointerMove}
-            onClick={handleObstacleClick} 
-            className="w-full h-full bg-gradient-to-b from-[#333] to-[#111] flex flex-col items-center relative overflow-hidden cursor-none"
+            onPointerMove={handlePointerMove}
+            onPointerDown={handleActionDown}
+            className="w-full h-full bg-gradient-to-b from-[#333] to-[#111] flex flex-col items-center relative overflow-hidden cursor-none touch-none"
         >
             {gameStatus === 'won' && <ProhodKKinoWinScreen onContinue={onWin} isMuted={isMuted} />}
             {gameStatus === 'lost' && <div className="absolute inset-0 bg-red-900 bg-opacity-70 z-30 flex items-center justify-center text-4xl md:text-6xl text-white animate-[fadeIn_0.5s]">СТОЛКНОВЕНИЕ!</div>}
