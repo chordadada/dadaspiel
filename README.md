@@ -74,13 +74,13 @@
 ## 🌐 СВЯЗЬ С ПУСТОТОЙ
 
 [![YouTube](https://img.shields.io/badge/Ютуб-DADA00?style=for-the-badge&logo=YouTube&logoColor=DA00DA)](https://www.youtube.com/@chordadada)
-[![Telegram](https://img.shields.io/badge/Телега-00DADA?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/chordadada)
-[![Instagram](https://img.shields.io/badge/Инста-DADA11?style=for-the-badge&logo=Instagram&logoColor=white)](https://www.instagram.com/chordadada)
-[![Facebook](https://img.shields.io/badge/Фэйсбуб-11DADA?style=for-the-badge&logo=Facebook&logoColor=white)](https://www.facebook.com/chorda.dadaisme/)
-[![VK](https://img.shields.io/badge/ВэКа-DADA01?style=for-the-badge&logo=VK&logoColor=white)](https://vk.com/chordadada)
-[![SoundCloud](https://img.shields.io/badge/СаўндКлаўд-10DADA?style=for-the-badge&logo=SoundCloud&logoColor=white)](https://soundcloud.com/soundadada)
-[![Spotify Rus](https://img.shields.io/badge/Спотик-DADA10?style=for-the-badge&logo=spotify&logoColor=white)](https://open.spotify.com/show/2tnJSAoaoDoCEshJjVLsph)
-[![Spotify Eng](https://img.shields.io/badge/Spotify-01DADA?style=for-the-badge&logo=spotify&logoColor=white)](https://open.spotify.com/show/7qJJJBKML70xiqyJSCh2DZ)
+[![Telegram](https://img.shields.io/badge/Телега-00DADA?style=for-the-badge&logo=telegram&logoColor=DA00DA)](https://t.me/chordadada)
+[![Instagram](https://img.shields.io/badge/Инста-DADA11?style=for-the-badge&logo=Instagram&logoColor=DA11DA)](https://www.instagram.com/chordadada)
+[![Facebook](https://img.shields.io/badge/Фэйсбуб-11DADA?style=for-the-badge&logo=Facebook&logoColor=DA11DA)](https://www.facebook.com/chorda.dadaisme/)
+[![VK](https://img.shields.io/badge/ВэКа-DADA01?style=for-the-badge&logo=VK&logoColor=DA01DA)](https://vk.com/chordadada)
+[![SoundCloud](https://img.shields.io/badge/СаўндКлаўд-10DADA?style=for-the-badge&logo=SoundCloud&logoColor=DA10DA)](https://soundcloud.com/soundadada)
+[![Spotify Rus](https://img.shields.io/badge/Спотик-DADA10?style=for-the-badge&logo=spotify&logoColor=DA10DA)](https://open.spotify.com/show/2tnJSAoaoDoCEshJjVLsph)
+[![Spotify Eng](https://img.shields.io/badge/Spotify-01DADA?style=for-the-badge&logo=spotify&logoColor=DA01DA)](https://open.spotify.com/show/7qJJJBKML70xiqyJSCh2DZ)
 
 ---
 
