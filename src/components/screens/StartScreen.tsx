@@ -196,7 +196,7 @@ export const StartScreen: React.FC = () => {
                     onClick={handleBack} 
                     className="pixel-button flex-1 md:flex-none px-2 py-3 md:px-8 text-m md:text-lg bg-gray-600 hover:bg-gray-500 min-w-[100px]"
                 >
-                    НАЗАД
+                    В МЕНЮ
                 </button>
                 <button 
                   onClick={handleStartGame} 
@@ -207,7 +207,7 @@ export const StartScreen: React.FC = () => {
                         : 'bg-green-700 hover:bg-green-600 animate-pulse shadow-[0_0_15px_rgba(0,255,0,0.4)]'
                     }`}
                 >
-                    ИГРАТЬ
+                    В ИГРУ
                 </button>
             </div>
 

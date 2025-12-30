@@ -178,7 +178,7 @@ const TutorialOverlay: React.FC<{ step: TutorialStep; onNext: () => void; season
                     </p>
                     {canContinue ? (
                         <button onClick={onNext} className="pixel-button p-4 text-2xl w-full bg-white text-black hover:bg-gray-200">
-                            ПОНЯТНО
+                            НОРМ
                         </button>
                     ) : (
                         <p className="text-sm text-gray-400 animate-pulse">Загрузка реальности...</p>
@@ -196,7 +196,7 @@ const TutorialOverlay: React.FC<{ step: TutorialStep; onNext: () => void; season
                         Мы адаптировали игру под квадратный формат, чтобы вам не пришлось вращать телефон, но для полного Дада-Экстаза рекомендуем <strong>Android</strong> или <strong>ПК</strong>.
                     </p>
                     <button onClick={onNext} className="pixel-button p-3 text-xl w-full bg-blue-600 hover:bg-blue-500">
-                        ПРИНЯТЬ СУДЬБУ
+                        СТРЁМ
                     </button>
                 </div>
             )}
@@ -206,7 +206,7 @@ const TutorialOverlay: React.FC<{ step: TutorialStep; onNext: () => void; season
                     <h3 className="text-3xl text-yellow-300 mb-4">ПОСЛЕДНИЙ СОВЕТ</h3>
                     <p className="text-2xl mb-8">Внимательно читайте правила перед каждым сном!</p>
                     <button onClick={onNext} className="pixel-button p-4 text-3xl w-full bg-yellow-500 text-black hover:bg-yellow-400">
-                        ИГРАТЬ
+                        ДАДА
                     </button>
                 </div>
             )}
