@@ -76,8 +76,7 @@
 [![YouTube](https://img.shields.io/badge/Ютуб-%23FF0000.svg?style=for-the-badge&logo=YouTube&logoColor=white)](https://www.youtube.com/@chordadada)
 [![Telegram](https://img.shields.io/badge/Телега-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/chordadada)
 [![Instagram](https://img.shields.io/badge/Инста-%23E4405F.svg?style=for-the-badge&logo=Instagram&logoColor=white)](https://www.instagram.com/chordadada)
-
-[![Facebook](https://img.shields.io/badge/Фэйсбублик-%231877F2.svg?style=for-the-badge&logo=Facebook&logoColor=white)](https://www.facebook.com/chorda.dadaisme/)
+[![Facebook](https://img.shields.io/badge/Фэйсбуб-%231877F2.svg?style=for-the-badge&logo=Facebook&logoColor=white)](https://www.facebook.com/chorda.dadaisme/)
 [![VK](https://img.shields.io/badge/ВэКа-%234680C2.svg?style=for-the-badge&logo=VK&logoColor=white)](https://vk.com/chordadada)
 [![SoundCloud](https://img.shields.io/badge/СаўндКлаўд-%23FF3300.svg?style=for-the-badge&logo=SoundCloud&logoColor=white)](https://soundcloud.com/soundadada)
 [![Spotify Rus](https://img.shields.io/badge/Спотик-1ED760?style=for-the-badge&logo=spotify&logoColor=white)](https://open.spotify.com/show/2tnJSAoaoDoCEshJjVLsph)
