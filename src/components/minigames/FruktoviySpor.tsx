@@ -144,7 +144,7 @@ export const FruktoviySporWinScreen: React.FC<{ onContinue: () => void; onPlayVi
                 <div className="absolute inset-0 spotlight-bg opacity-50"></div>
                 
                 <div className="relative z-10 p-8 border-y-4 border-yellow-300 bg-black/60 backdrop-blur-md w-full">
-                    <h2 className="text-5xl md:text-7xl font-serif text-yellow-300 mb-2 drop-shadow-[0_0_10px_rgba(253,224,71,0.8)]">БЛЕСТЯЩЕ!</h2>
+                    <h2 className="text-5xl md:text-7xl font-serif text-yellow-300 mb-2">БЛЕСТЯЩЕ!</h2>
                     <p className="text-2xl text-pink-300 italic font-serif">Ваша риторика неотразима</p>
                 </div>
 
@@ -404,10 +404,15 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
     const handlePointerMove = (e: React.PointerEvent) => {
         if (gameAreaRef.current && status === 'playing' && !isPaused) {
             const rect = gameAreaRef.current.getBoundingClientRect();
-            // На мобильных палец часто закрывает фигурку, поэтому берем только X координату
-            // Вычисляем положение курсора/пальца относительно всего экрана и проецируем на шкалу 0-100
-            const rawX = ((e.clientX - rect.left) / rect.width) * 100;
-            targetPlayerX.current = Math.max(5, Math.min(95, rawX));
+            const relativeX = e.clientX - rect.left;
+            const halfWidth = rect.width / 2;
+
+            // Только если курсор/палец находится в ПРАВОЙ половине экрана
+            if (relativeX >= halfWidth) {
+                // Рассчитываем позицию X внутри правой половины (0-100%)
+                const localX = ((relativeX - halfWidth) / halfWidth) * 100;
+                targetPlayerX.current = Math.max(5, Math.min(95, localX));
+            }
         }
     };
 
