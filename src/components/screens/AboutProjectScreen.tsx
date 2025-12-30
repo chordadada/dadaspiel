@@ -94,7 +94,7 @@ export const AboutProjectScreen: React.FC = () => {
                     line-height: 2;
                     transform-origin: 50% 100%;
                     /* animation duration: скорость прокрутки (120s - медленно, 60s - быстро) */
-                    animation: star-wars-crawl 200s linear infinite; 
+                    animation: star-wars-crawl 500s linear infinite; 
                     padding-bottom: 20vh;
                 }
 
@@ -131,15 +131,15 @@ export const AboutProjectScreen: React.FC = () => {
                             
                             <h2 className="text-2xl text-blue-400 border-b border-blue-500 pb-2 mt-2">КОМАНДА</h2>
                             <ul className="text-gray-300 text-sm space-y-1">
-                                <li>• Идея: <span className="text-white">Хорда Дадаизма</span></li>
+                                <li>• Идея: <span className="text-white">Отсутствует</span></li>
                                 <li>• Разработка: <span className="text-white">Лев и Близнецы</span></li>
-                                <li>• Визуал: <span className="text-white">Процедурный Хаос</span></li>
+                                <li>• Визуал: <span className="text-white">Угар Прокрастинации</span></li>
                             </ul>
 
                             <div className="mt-auto pt-4 flex gap-4">
                                 <button 
                                     onClick={handleToggleManifesto}
-                                    className="flex-1 pixel-button p-3 bg-yellow-600 hover:bg-yellow-500 text-black font-black text-lg animate-pulse"
+                                    className="flex-1 pixel-button p-3 bg-yellow-600 hover:bg-yellow-500 text-lg animate-pulse"
                                 >
                                     МАНИФЕСТ
                                 </button>
@@ -156,6 +156,7 @@ export const AboutProjectScreen: React.FC = () => {
                         <div className="bg-black/60 p-6 pixel-border flex flex-col gap-4 backdrop-blur-sm">
                             <h2 className="text-2xl text-cyan-400 border-b border-cyan-500 pb-2">СВЯЗЬ</h2>
                             <div className="flex flex-wrap gap-2 overflow-y-auto max-h-[160px] md:max-h-none custom-scrollbar">
+                                <SocialBadge label="ГИТХАБ" color="#DA00DA" url="https://github.com/chordadada/dadaspiel" />
                                 <SocialBadge label="ЮЦЮП" color="#FF0000" url="https://www.youtube.com/@chordadada" />
                                 <SocialBadge label="ЦЕЛЕГА" color="#2CA5E0" url="https://t.me/chordadada" />
                                 <SocialBadge label="ИНСТА" color="#E4405F" url="https://www.instagram.com/chordadada" />
