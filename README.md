@@ -73,7 +73,7 @@
 
 ## 🌐 СВЯЗЬ С ПУСТОТОЙ
 
-[![YouTube](https://img.shields.io/badge/Ютуб-DADA00?style=for-the-badge&logo=YouTube&logoColor=white)](https://www.youtube.com/@chordadada)
+[![YouTube](https://img.shields.io/badge/Ютуб-DADA00?style=for-the-badge&logo=YouTube&logoColor=DA00DA)](https://www.youtube.com/@chordadada)
 [![Telegram](https://img.shields.io/badge/Телега-00DADA?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/chordadada)
 [![Instagram](https://img.shields.io/badge/Инста-DADA11?style=for-the-badge&logo=Instagram&logoColor=white)](https://www.instagram.com/chordadada)
 [![Facebook](https://img.shields.io/badge/Фэйсбуб-11DADA?style=for-the-badge&logo=Facebook&logoColor=white)](https://www.facebook.com/chorda.dadaisme/)
