@@ -7,9 +7,10 @@ import { Character } from '../../../types';
 import { PixelArt } from '../core/PixelArt';
 import { CHARACTER_ART_MAP, PIXEL_ART_PALETTE, BLACK_PLAYER_ART_DATA } from '../../../characterArt';
 import { GUARD_ART_DATA, DOBRO_ART_DATA } from '../../miscArt';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
-// --- НАСТРОЙКИ СЛОЖНОСТИ (Словарь для удобного редактирования) ---
-const DIFFICULTY_SETTINGS = {
+// --- БАЗОВЫЕ НАСТРОЙКИ СЛОЖНОСТИ ---
+const BASE_DIFFICULTY = {
     [Character.KANILA]: {
         fallSpeed: 12,        // Скорость падения
         spawnRate: 0.03,     // Частота появления
@@ -110,7 +111,7 @@ export const FruktoviySporWinScreen: React.FC<{ onContinue: () => void; onPlayVi
     // KANILA (Anarchic/Street)
     if (character === Character.KANILA) {
         return (
-            <div className="absolute inset-0 bg-zinc-900 z-30 flex flex-col items-center justify-center text-center p-4 overflow-hidden">
+            <div className="absolute inset-0 bg-zinc-900 z-40 flex flex-col items-center justify-center text-center p-4 overflow-hidden">
                 <style>{`
                     @keyframes spray-drip { 0% { height: 0px; } 100% { height: 40px; } }
                     .drip { position: absolute; width: 4px; background: #ef4444; animation: spray-drip 2s ease-out forwards; }
@@ -136,7 +137,7 @@ export const FruktoviySporWinScreen: React.FC<{ onContinue: () => void; onPlayVi
     // SEXISM (Glamour/TV)
     if (character === Character.SEXISM) {
         return (
-            <div className="absolute inset-0 bg-fuchsia-900 z-30 flex flex-col items-center justify-center text-center p-4 overflow-hidden">
+            <div className="absolute inset-0 bg-fuchsia-900 z-40 flex flex-col items-center justify-center text-center p-4 overflow-hidden">
                 <style>{`
                     @keyframes spotlight-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                     .spotlight-bg { background: conic-gradient(from 0deg at 50% 50%, #701a75 0deg, #a21caf 60deg, #701a75 120deg, #a21caf 180deg, #701a75 240deg, #a21caf 300deg, #701a75 360deg); animation: spotlight-spin 10s linear infinite; }
@@ -158,7 +159,7 @@ export const FruktoviySporWinScreen: React.FC<{ onContinue: () => void; onPlayVi
 
     // Fallback / Generic
     return (
-        <div className="absolute inset-0 bg-black/90 z-30 flex flex-col items-center justify-center text-center p-4">
+        <div className="absolute inset-0 bg-black/90 z-40 flex flex-col items-center justify-center text-center p-4">
             <h2 className="text-6xl text-yellow-400 mb-4 animate-bounce">ПОБЕДА В СПОРЕ!</h2>
             <div className="flex gap-4">
                 <button onClick={onPlayVideo} className="pixel-button p-3 text-xl bg-purple-700">ДОКАЗАТЕЛЬСТВА</button>
@@ -172,7 +173,7 @@ export const BlackPlayerBecomingWinScreen: React.FC<{ onContinue: () => void; on
     const { playSound } = useSettings();
     useEffect(() => { playSound(SoundType.WIN_FRUKTY); }, [playSound]);
     return (
-        <div className="absolute inset-0 bg-black z-30 flex flex-col items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-black z-40 flex flex-col items-center justify-center overflow-hidden">
             <div className="z-10 flex flex-col items-center filter invert">
                 <div className="mb-8">
                      <PixelArt artData={BLACK_PLAYER_ART_DATA} palette={PIXEL_ART_PALETTE} pixelSize={8} />
@@ -207,7 +208,7 @@ const FruktoviySporLoseScreen: React.FC<{ onRetry: () => void; character: Charac
     }
 
     return (
-        <div className={`absolute inset-0 z-30 flex flex-col items-center justify-center ${bgColor} overflow-hidden animate-[fadeIn_0.3s]`}>
+        <div className={`absolute inset-0 z-40 flex flex-col items-center justify-center ${bgColor} overflow-hidden animate-[fadeIn_0.3s]`}>
             <div className="absolute inset-0 bg-black/50"></div>
             
             <div className="z-10 flex flex-col items-center">
@@ -254,8 +255,22 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
     const { character } = useSession();
     const { playSound, isPaused } = useSettings();
     const { isInstructionModalVisible } = useNavigation();
+    const { isMobile } = useIsMobile();
 
-    const diff = useMemo(() => DIFFICULTY_SETTINGS[character || Character.KANILA], [character]);
+    // --- ВЫЧИСЛЕНИЕ СЛОЖНОСТИ С УЧЁТОМ УСТРОЙСТВА ---
+    const diff = useMemo(() => {
+        const base = BASE_DIFFICULTY[character || Character.KANILA];
+        if (isMobile) return base;
+        
+        // На десктопе увеличиваем плотность и скорость
+        return {
+            ...base,
+            fallSpeed: base.fallSpeed * 1.4, // +40% к скорости
+            spawnRate: base.spawnRate * 1.5, // +50% к частоте появления предметов
+        };
+    }, [character, isMobile]);
+
+   
     const duration = character === Character.BLACK_PLAYER ? 120 : (character === Character.SEXISM ? 90 : 60);
     const itemPool = useMemo(() => CHARACTER_ARGUMENTS[character || Character.KANILA], [character]);
 
@@ -346,7 +361,7 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
         else setRuleTimer(ruleTimerRef.current);
 
         // Плавное следование за целью (LERP) - ускорено для мгновенной реакции
-        const smoothFactor = 1 - Math.pow(0.0001, dtSec); 
+        const smoothFactor = 1 - Math.pow(0.00001, dtSec); 
         setPlayerX(prev => prev + (targetPlayerX.current - prev) * smoothFactor);
 
         // AI Lerp
