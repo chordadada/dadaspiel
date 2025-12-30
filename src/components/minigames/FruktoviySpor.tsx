@@ -173,10 +173,6 @@ export const BlackPlayerBecomingWinScreen: React.FC<{ onContinue: () => void; on
     useEffect(() => { playSound(SoundType.WIN_FRUKTY); }, [playSound]);
     return (
         <div className="absolute inset-0 bg-black z-30 flex flex-col items-center justify-center overflow-hidden">
-            <style>{`
-                @keyframes glitch-bg-red { 0% { background: #000; } 10% { background: #300; } 20% { background: #000; } 100% { background: #000; } }
-            `}</style>
-            <div className="absolute inset-0 z-0 animate-[glitch-bg-red_0.2s_infinite]"></div>
             <div className="z-10 flex flex-col items-center filter invert">
                 <div className="mb-8">
                      <PixelArt artData={BLACK_PLAYER_ART_DATA} palette={PIXEL_ART_PALETTE} pixelSize={8} />
@@ -415,7 +411,25 @@ export const FruktoviySpor: React.FC<{ onWin: () => void; onLose: () => void }> 
         }
     };
 
-    const handleWinContinue = () => { playSound(SoundType.BUTTON_CLICK); onWin(); };
+    // --- RENDER WIN/LOSE SCREENS ---
+    if (status === 'won') {
+        const winProps = { onContinue: onWin, onPlayVideo: () => setVideoUrl("https://www.youtube.com/watch?v=29p14n_qeN0"), character };
+        return (
+            <>
+                {character === Character.BLACK_PLAYER ? <BlackPlayerBecomingWinScreen {...winProps} /> : <FruktoviySporWinScreen {...winProps} />}
+                {videoUrl && <VideoModal url={videoUrl} onClose={() => setVideoUrl(null)} />}
+            </>
+        );
+    }
+
+    if (status === 'lost') {
+        return <FruktoviySporLoseScreen onRetry={onLose} character={character} />;
+    }
+
+    // --- MAIN RENDER ---
+    const tension = Math.max(0, (aiScore - playerScore) / 10);
+    const bgColor = `rgba(${18 + tension * 40}, ${10 - tension * 5}, ${4 - tension * 2}, 1)`;
+
 
     return (
         <div ref={gameAreaRef} 
